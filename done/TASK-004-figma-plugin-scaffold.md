@@ -1,7 +1,7 @@
 ---
 id: TASK-004
 title: Каркас Figma Plugin (manifest, UI и связь песочницы)
-status: pending
+status: done
 priority: high
 phase: 1
 dependencies: [TASK-001, TASK-002]
@@ -34,14 +34,14 @@ tags: [figma-plugin, manifest, ui, sandbox]
   - Прослушивание `figma.ui.onmessage` и базовое логирование полученного объекта.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Плагин успешно загружается в Figma Desktop через `Plugins -> Development -> Import plugin from manifest...`.
-- [ ] Окно плагина открывается, в него можно вставить тестовый JSON.
-- [ ] По нажатию кнопки в консоли плагина Figma логируется валидный объект сообщения.
+- [x] Плагин успешно загружается в Figma Desktop через `Plugins -> Development -> Import plugin from manifest...`.
+- [x] Окно плагина открывается, в него можно вставить тестовый JSON.
+- [x] По нажатию кнопки в консоли плагина Figma логируется валидный объект сообщения.
 
 ## 5. Чек-лист реализации
-- [ ] Создать `manifest.json`.
-- [ ] Создать `src/plugin/ui.html` со стилизованной формой ввода.
-- [ ] Написать входную точку `src/plugin/code.ts` с подпиской на `onmessage`.
-- [ ] Настроить сборку `ui.html` в `dist/ui.html`.
-- [ ] Проверить запуск в приложении Figma.
-- [ ] Переместить карточку в `/done`.
+- [x] Создать `manifest.json`.
+- [x] Создать `src/plugin/ui.html` со стилизованной формой ввода.
+- [x] Написать входную точку `src/plugin/code.ts` с подпиской на `onmessage`.
+- [x] Настроить сборку `ui.html` в `dist/ui.html`.
+- [x] Проверить запуск в приложении Figma.
+- [x] Переместить карточку в `/done`.

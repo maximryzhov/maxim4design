@@ -2,67 +2,315 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>maxim4design</title>
+  <title>maxim4design — HTML to Figma</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: Inter, sans-serif;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       margin: 0;
       padding: 16px;
-      background: #f5f5f5;
-      color: #333;
+      background: #ffffff;
+      color: #333333;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
-    h2 {
-      margin-top: 0;
-      font-size: 16px;
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .logo-badge {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #ffffff;
+      font-size: 15px;
+    }
+    .title-group h2 {
+      margin: 0;
+      font-size: 14px;
       font-weight: 600;
+      color: #111827;
+    }
+    .title-group p {
+      margin: 2px 0 0 0;
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    label {
+      font-weight: 500;
+      color: #374151;
+    }
+    .btn-link {
+      background: none;
+      border: none;
+      color: #2563eb;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
     }
     textarea {
       width: 100%;
-      height: 200px;
-      box-sizing: border-box;
-      font-family: monospace;
+      flex: 1;
+      min-height: 180px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 11px;
-      padding: 8px;
-      border: 1px solid #ccc;
+      padding: 10px;
+      border: 1px solid #d1d5db;
       border-radius: 6px;
-      resize: vertical;
+      resize: none;
+      background: #f9fafb;
+      color: #111827;
+      outline: none;
     }
-    button {
+    textarea:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+    }
+    .status-box {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      display: none;
+    }
+    .status-box.info {
+      display: block;
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+    .status-box.success {
+      display: block;
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .status-box.error {
+      display: block;
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
       margin-top: 12px;
+    }
+    button.primary {
+      flex: 1;
       background: #18a0fb;
       color: white;
       border: none;
       padding: 10px 16px;
       border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    button.primary:hover {
+      background: #0d8de3;
+    }
+    button.primary:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    button.secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      padding: 10px 12px;
+      border-radius: 6px;
       font-weight: 500;
       cursor: pointer;
-      width: 100%;
     }
-    button:hover {
-      background: #0d8de3;
+    button.secondary:hover {
+      background: #e5e7eb;
     }
   </style>
 </head>
 <body>
-  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-    <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 16px;">M</div>
-    <h2 style="margin: 0;">maxim4design</h2>
+  <div class="header">
+    <div class="logo-badge">M</div>
+    <div class="title-group">
+      <h2>maxim4design</h2>
+      <p>HTML to Figma Engine</p>
+    </div>
   </div>
-  <p style="font-size: 12px; color: #666;">Вставьте FIR JSON веб-страницы ниже:</p>
-  <textarea id="jsonInput" placeholder='{"type": "FRAME", ...}'></textarea>
-  <button id="importBtn">Импортировать в Figma</button>
+
+  <div class="label-row">
+    <label for="jsonInput">FIR JSON (Figma Intermediate Representation):</label>
+    <button type="button" class="btn-link" id="loadSampleBtn">Загрузить демо</button>
+  </div>
+
+  <textarea id="jsonInput" placeholder='Вставьте сюда JSON, полученный из DOM-экстрактора...'></textarea>
+
+  <div id="statusBox" class="status-box"></div>
+
+  <div class="actions">
+    <button type="button" class="secondary" id="clearBtn">Очистить</button>
+    <button type="button" class="primary" id="importBtn">Импортировать в Figma</button>
+  </div>
 
   <script>
-    document.getElementById('importBtn').addEventListener('click', () => {
-      const raw = document.getElementById('jsonInput').value.trim();
-      if (!raw) return;
-      try {
-        const payload = JSON.parse(raw);
-        parent.postMessage({ pluginMessage: { type: 'IMPORT_FIR', payload } }, '*');
-      } catch (err) {
-        alert('Invalid JSON: ' + err.message);
-      }
+    const sampleFIR = {
+      id: "demo-card",
+      name: "div.card",
+      type: "FRAME",
+      bounds: { x: 100, y: 100, width: 320, height: 180 },
+      visible: true,
+      opacity: 1,
+      clipsContent: false,
+      zIndex: 0,
+      layout: {
+        mode: "VERTICAL",
+        wrap: false,
+        itemSpacing: 12,
+        padding: { top: 20, right: 20, bottom: 20, left: 20 },
+        primaryAlign: "MIN",
+        counterAlign: "MIN",
+        sizingHorizontal: "FIXED",
+        sizingVertical: "HUG"
+      },
+      style: {
+        backgroundColor: { r: 1, g: 1, b: 1, a: 1 },
+        borderRadius: { topLeft: 12, topRight: 12, bottomRight: 12, bottomLeft: 12 },
+        borders: {
+          top: { width: 1, color: { r: 0.88, g: 0.9, b: 0.94, a: 1 }, style: "solid" },
+          right: { width: 1, color: { r: 0.88, g: 0.9, b: 0.94, a: 1 }, style: "solid" },
+          bottom: { width: 1, color: { r: 0.88, g: 0.9, b: 0.94, a: 1 }, style: "solid" },
+          left: { width: 1, color: { r: 0.88, g: 0.9, b: 0.94, a: 1 }, style: "solid" }
+        }
+      },
+      children: [
+        {
+          id: "demo-title",
+          name: "h2.title",
+          type: "TEXT",
+          bounds: { x: 20, y: 20, width: 280, height: 28 },
+          visible: true,
+          opacity: 1,
+          clipsContent: false,
+          zIndex: 1,
+          textData: {
+            characters: "Привет, maxim4design!",
+            segments: [
+              {
+                start: 0,
+                end: 21,
+                fontFamily: "Inter",
+                fontWeight: 700,
+                fontSize: 18,
+                color: { r: 0.08, g: 0.1, b: 0.15, a: 1 }
+              }
+            ]
+          }
+        },
+        {
+          id: "demo-desc",
+          name: "p.description",
+          type: "TEXT",
+          bounds: { x: 20, y: 56, width: 280, height: 40 },
+          visible: true,
+          opacity: 1,
+          clipsContent: false,
+          zIndex: 2,
+          textData: {
+            characters: "Конвертер веб-разметки в нативные редактируемые слои Figma.",
+            segments: [
+              {
+                start: 0,
+                end: 58,
+                fontFamily: "Inter",
+                fontWeight: 400,
+                fontSize: 13,
+                color: { r: 0.38, g: 0.44, b: 0.52, a: 1 }
+              }
+            ]
+          }
+        }
+      ]
+    };
+
+    const jsonInput = document.getElementById('jsonInput');
+    const importBtn = document.getElementById('importBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const loadSampleBtn = document.getElementById('loadSampleBtn');
+    const statusBox = document.getElementById('statusBox');
+
+    function setStatus(text, type) {
+      statusBox.textContent = text;
+      statusBox.className = 'status-box ' + type;
+    }
+
+    loadSampleBtn.addEventListener('click', () => {
+      jsonInput.value = JSON.stringify(sampleFIR, null, 2);
+      setStatus('Демо-данные FIR загружены в поле ввода.', 'info');
     });
+
+    clearBtn.addEventListener('click', () => {
+      jsonInput.value = '';
+      statusBox.className = 'status-box';
+      statusBox.style.display = 'none';
+    });
+
+    importBtn.addEventListener('click', () => {
+      const raw = jsonInput.value.trim();
+      if (!raw) {
+        setStatus('Пожалуйста, вставьте JSON или нажмите «Загрузить демо».', 'error');
+        return;
+      }
+
+      let payload;
+      try {
+        payload = JSON.parse(raw);
+      } catch (err) {
+        setStatus('Ошибка парсинга JSON: ' + err.message, 'error');
+        return;
+      }
+
+      setStatus('Отправка FIR в песочницу Figma...', 'info');
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: 'IMPORT_FIR',
+            payload: payload
+          }
+        },
+        '*'
+      );
+    });
+
+    window.onmessage = (event) => {
+      const msg = event.data?.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === 'STATUS') {
+        setStatus(msg.message, msg.status || 'info');
+      } else if (msg.type === 'SUCCESS') {
+        setStatus(msg.message || 'Импорт успешно завершен!', 'success');
+      } else if (msg.type === 'ERROR') {
+        setStatus('Ошибка импорта: ' + msg.message, 'error');
+      }
+    };
   </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 {
-  "name": "maxim4design",
-  "id": "maxim4design-plugin",
+  "name": "HTML to Design (Open Source) - maxim4design",
+  "id": "maxim4design-html-to-figma",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui.html",
