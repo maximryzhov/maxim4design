@@ -1,5 +1,6 @@
 import type { FIRNode, FIRBounds, RGBAColor } from '../types/fir.ts';
 import { fontManager } from './font-manager.ts';
+import { applyAutoLayout, applyChildSizing } from './layout-engine.ts';
 
 /**
  * Safely loads a font with fallback to Inter Regular
@@ -126,11 +127,23 @@ export async function renderFIRNode(
     frame.bottomLeftRadius = node.style.borderRadius.bottomLeft;
   }
 
+  // Auto Layout configuration
+  if (node.layout) {
+    applyAutoLayout(frame, node.layout);
+  }
+
   // Recursively render children
   if (node.children && node.children.length > 0) {
     for (const childNode of node.children) {
       const childSceneNode = await renderFIRNode(childNode, frame, node.bounds);
       frame.appendChild(childSceneNode);
+
+      if (childNode.layout) {
+        applyChildSizing(childSceneNode, {
+          horizontal: childNode.layout.sizingHorizontal,
+          vertical: childNode.layout.sizingVertical,
+        });
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 ---
 id: TASK-007
 title: Движок маппинга Flexbox в Figma Auto Layout
-status: pending
+status: done
 priority: high
 phase: 2
 dependencies: [TASK-005]
@@ -37,14 +37,14 @@ tags: [autolayout, flexbox, layout, figma-plugin]
     - Для контентных блоков -> `child.layoutSizingHorizontal = 'HUG'`.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Горизонтальные и вертикальные flex-контейнеры создаются с включенным Auto Layout в Figma.
-- [ ] При изменении ширины родительского фрейма в Figma дочерние элементы с `FILL` корректно адаптируются.
-- [ ] Отступы (`padding`) и промежутки (`gap`) точно соответствуют сайту (попиксельное совпадение).
+- [x] Горизонтальные и вертикальные flex-контейнеры создаются с включенным Auto Layout в Figma.
+- [x] При изменении ширины родительского фрейма в Figma дочерние элементы с `FILL` корректно адаптируются.
+- [x] Отступы (`padding`) и промежутки (`gap`) точно соответствуют сайту (попиксельное совпадение).
 
 ## 5. Чек-лист реализации
-- [ ] Расширить экстрактор для сбора flexbox-свойств в `FIRLayout`.
-- [ ] Создать `src/plugin/layout-engine.ts`.
-- [ ] Реализовать маппинг выравниваний (primary / counter align).
-- [ ] Реализовать установку `layoutSizingHorizontal` и `layoutSizingVertical`.
-- [ ] Протестировать на навигационной панели (navbar) и карточках с flex-раскладкой.
-- [ ] Переместить карточку в `/done`.
+- [x] Расширить экстрактор для сбора flexbox-свойств в `FIRLayout`.
+- [x] Создать `src/plugin/layout-engine.ts`.
+- [x] Реализовать маппинг выравниваний (primary / counter align).
+- [x] Реализовать установку `layoutSizingHorizontal` и `layoutSizingVertical`.
+- [x] Протестировать на навигационной панели (navbar) и карточках с flex-раскладкой.
+- [x] Переместить карточку в `/done`.

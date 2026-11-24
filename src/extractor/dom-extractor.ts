@@ -4,6 +4,7 @@ import type {
   RGBAColor,
   FIRBounds,
   FIRStyle,
+  FIRLayout,
   BorderSideStyle,
   TextSegment,
 } from '../types/fir.ts';
@@ -166,6 +167,73 @@ function parseBorders(computed: CSSStyleDeclaration) {
   return { top, right, bottom, left };
 }
 
+export function parseLayout(computed: CSSStyleDeclaration): FIRLayout | undefined {
+  const isFlex = computed.display === 'flex' || computed.display === 'inline-flex';
+  if (!isFlex) {
+    return undefined;
+  }
+
+  const mode = computed.flexDirection?.startsWith('column') ? 'VERTICAL' : 'HORIZONTAL';
+  const wrap = computed.flexWrap === 'wrap' || computed.flexWrap === 'wrap-reverse';
+  const itemSpacing =
+    parseFloat(computed.gap) ||
+    parseFloat(mode === 'VERTICAL' ? computed.rowGap : computed.columnGap) ||
+    0;
+
+  const padding = {
+    top: parseFloat(computed.paddingTop) || 0,
+    right: parseFloat(computed.paddingRight) || 0,
+    bottom: parseFloat(computed.paddingBottom) || 0,
+    left: parseFloat(computed.paddingLeft) || 0,
+  };
+
+  let primaryAlign: 'MIN' | 'CENTER' | 'MAX' | 'SPACE_BETWEEN' = 'MIN';
+  const jc = computed.justifyContent;
+  if (jc === 'center') {
+    primaryAlign = 'CENTER';
+  } else if (jc === 'flex-end' || jc === 'end') {
+    primaryAlign = 'MAX';
+  } else if (jc === 'space-between') {
+    primaryAlign = 'SPACE_BETWEEN';
+  }
+
+  let counterAlign: 'MIN' | 'CENTER' | 'MAX' | 'BASELINE' = 'MIN';
+  const ai = computed.alignItems;
+  if (ai === 'center') {
+    counterAlign = 'CENTER';
+  } else if (ai === 'flex-end' || ai === 'end') {
+    counterAlign = 'MAX';
+  } else if (ai === 'baseline') {
+    counterAlign = 'BASELINE';
+  }
+
+  let sizingHorizontal: 'FIXED' | 'HUG' | 'FILL' = 'FIXED';
+  const flexGrow = parseFloat(computed.flexGrow) || 0;
+  if (flexGrow > 0 || computed.width === '100%') {
+    sizingHorizontal = 'FILL';
+  } else if (computed.width === 'auto' || computed.display === 'inline-flex') {
+    sizingHorizontal = 'HUG';
+  }
+
+  let sizingVertical: 'FIXED' | 'HUG' | 'FILL' = 'FIXED';
+  if (computed.height === '100%') {
+    sizingVertical = 'FILL';
+  } else if (computed.height === 'auto') {
+    sizingVertical = 'HUG';
+  }
+
+  return {
+    mode,
+    wrap,
+    itemSpacing,
+    padding,
+    primaryAlign,
+    counterAlign,
+    sizingHorizontal,
+    sizingVertical,
+  };
+}
+
 function isElementVisible(computed: CSSStyleDeclaration, rect: DOMRect | { width: number; height: number }): boolean {
   if (computed.display === 'none') return false;
   if (computed.visibility === 'hidden' || computed.visibility === 'collapse') return false;
@@ -218,6 +286,8 @@ function traverseElement(element: HTMLElement): FIRNode {
   if (borders) {
     style.borders = borders;
   }
+
+  const layout = parseLayout(computed);
 
   // 1. SVG element handler
   if (tagName === 'SVG') {
@@ -304,6 +374,7 @@ function traverseElement(element: HTMLElement): FIRNode {
       visible,
       opacity,
       clipsContent,
+      layout,
       zIndex,
       style: Object.keys(style).length > 0 ? style : undefined,
       textData: {
@@ -327,6 +398,7 @@ function traverseElement(element: HTMLElement): FIRNode {
     visible,
     opacity,
     clipsContent,
+    layout,
     zIndex,
     style: Object.keys(style).length > 0 ? style : undefined,
     children: children.length > 0 ? children : undefined,
