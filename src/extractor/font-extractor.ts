@@ -4,18 +4,33 @@ function cleanFamilyName(raw: string): string {
   return raw.replace(/^['"]|['"]$/g, '').trim();
 }
 
+/**
+ * Extracts all url(...) entries from a CSS @font-face src declaration,
+ * preferring woff2/ttf/otf or data:font/* URIs.
+ */
 function extractFirstFontSrc(srcCss: string): { sourceUrl?: string; format?: string } {
   if (!srcCss) return {};
-  const urlMatch = srcCss.match(/url\(\s*['"]?([^'")]+)['"]?\s*\)/i);
-  if (!urlMatch) return {};
-  const sourceUrl = urlMatch[1].trim();
-  const formatMatch = srcCss.match(/format\(\s*['"]?([^'")]+)['"]?\s*\)/i);
-  let format = formatMatch ? formatMatch[1].toLowerCase() : undefined;
+  const matches = Array.from(srcCss.matchAll(/url\(\s*['"]?([^'")]+)['"]?\s*\)(?:\s*format\(\s*['"]?([^'")]+)['"]?\s*\))?/gi));
+  if (matches.length === 0) return {};
+
+  // Prefer data: URI or ttf/otf/woff2
+  let chosen = matches[0];
+  for (const m of matches) {
+    const url = (m[1] || '').trim();
+    const fmt = (m[2] || '').toLowerCase();
+    if (url.startsWith('data:font/') || fmt === 'woff2' || fmt === 'truetype') {
+      chosen = m;
+      break;
+    }
+  }
+
+  const sourceUrl = chosen[1].trim();
+  let format = chosen[2] ? chosen[2].toLowerCase() : undefined;
   if (!format) {
     if (sourceUrl.startsWith('data:font/woff2') || sourceUrl.includes('.woff2')) format = 'woff2';
     else if (sourceUrl.startsWith('data:font/woff') || sourceUrl.includes('.woff')) format = 'woff';
-    else if (sourceUrl.includes('.ttf')) format = 'ttf';
-    else if (sourceUrl.includes('.otf')) format = 'otf';
+    else if (sourceUrl.startsWith('data:font/ttf') || sourceUrl.includes('.ttf')) format = 'ttf';
+    else if (sourceUrl.startsWith('data:font/otf') || sourceUrl.includes('.otf')) format = 'otf';
   }
   return { sourceUrl, format };
 }

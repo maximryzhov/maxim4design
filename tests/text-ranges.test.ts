@@ -419,3 +419,65 @@ test('renderTextNode compensates width for multiline large headings when font fa
   assert.equal(rendered.textAutoResize, 'HEIGHT');
   assert.equal(rendered.width, 460); // 400 * 1.15
 });
+
+test('renderTextNode ensures minWidth accommodates longest word on condensed-to-Inter fallback', async () => {
+  fontManager.clearCache();
+  class MockLongWordTextNode {
+    type = 'TEXT';
+    name = '';
+    characters = '';
+    fontName: any = null;
+    x = 0;
+    y = 0;
+    width = 0;
+    height = 0;
+    opacity = 1;
+    visible = true;
+    textAutoResize = 'NONE';
+    resize(w: number, h: number) {
+      this.width = w;
+      this.height = h;
+    }
+    setRangeFontName() {}
+    setRangeFontSize() {}
+    setRangeFills() {}
+  }
+
+  (globalThis as any).figma = {
+    loadFontAsync: async (f: { family: string; style: string }) => {
+      if (f.family === 'ContactBebas') throw new Error('Font not in Figma');
+    },
+    createText: () => new MockLongWordTextNode(),
+  };
+
+  // "ИСКУССТВЕННЫЕ" has 13 chars at fontSize 48 => 13 * 48 * 0.72 = 449px (> 300 * 1.15 = 345px)
+  const bannerNode: FIRNode = {
+    id: 'banner-h2',
+    name: 'h2.banner',
+    type: 'TEXT',
+    bounds: { x: 0, y: 0, width: 300, height: 150 },
+    visible: true,
+    opacity: 1,
+    clipsContent: false,
+    zIndex: 0,
+    textData: {
+      characters: 'НАСТОЯЩИЕ ВПЕЧАТЛЕНИЯ.\nИСКУССТВЕННЫЕ РАСТЕНИЯ.',
+      whiteSpace: 'normal',
+      isSingleLine: false,
+      segments: [
+        {
+          start: 0,
+          end: 47,
+          fontFamily: 'ContactBebas',
+          fontWeight: 800,
+          fontSize: 48,
+          color: { r: 1, g: 1, b: 1, a: 1 },
+        },
+      ],
+    },
+  };
+
+  const rendered = (await renderTextNode(bannerNode)) as any;
+  assert.equal(rendered.textAutoResize, 'HEIGHT');
+  assert.ok(rendered.width >= 449, `Expected width >= 449, got ${rendered.width}`);
+});

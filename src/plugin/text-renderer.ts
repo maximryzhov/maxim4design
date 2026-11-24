@@ -143,9 +143,15 @@ export async function renderTextNode(
   if (textData?.whiteSpace === 'nowrap' || textData?.isSingleLine) {
     textNode.textAutoResize = 'WIDTH_AND_HEIGHT';
   } else {
-    if (usedFallbackFont && (firstSeg?.fontSize ?? 0) >= 28) {
-      // Compensate for wider fallback font (e.g. Inter replacing condensed Oswald)
-      textNode.resize(Math.round(width * 1.15), height);
+    const segFontSize = firstSeg?.fontSize ?? 0;
+    if (usedFallbackFont && segFontSize >= 28) {
+      // Compensate for wider fallback font (e.g. Inter replacing condensed Oswald / ContactBebas)
+      const longestWordLen = characters
+        .split(/\s+/)
+        .reduce((max, w) => Math.max(max, w.length), 0);
+      const minWordWidth = Math.round(longestWordLen * segFontSize * 0.72);
+      const compensatedWidth = Math.max(Math.round(width * 1.15), minWordWidth);
+      textNode.resize(compensatedWidth, height);
     }
     textNode.textAutoResize = 'HEIGHT';
   }
