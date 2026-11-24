@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "maxim4design — HTML to Figma Capture",
+  "version": "0.1.0",
+  "description": "Capture any web page or element directly into Figma-ready FIR format",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Capture for Figma"
+  }
+}
