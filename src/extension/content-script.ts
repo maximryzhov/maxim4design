@@ -1,4 +1,4 @@
-import { extractFIRFromElement } from '../extractor/dom-extractor.ts';
+import { extractFIRFromElementAsync } from '../extractor/dom-extractor.ts';
 
 declare const chrome: any;
 
@@ -70,7 +70,7 @@ function startElementInspector() {
     target.style.cursor = 'crosshair';
   }
 
-  function onClick(e: MouseEvent) {
+  async function onClick(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
 
@@ -80,7 +80,7 @@ function startElementInspector() {
     if (!target) return;
 
     try {
-      const fir = extractFIRFromElement(target);
+      const fir = await extractFIRFromElementAsync(target);
       copyToClipboard(fir).then(() => {
         showToast(`Элемент <${target.tagName.toLowerCase()}> скопирован в буфер! Вставьте в Figma.`);
       });
@@ -116,17 +116,18 @@ function startElementInspector() {
 if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
   chrome.runtime.onMessage.addListener((request: any, sender: any, sendResponse: (resp: any) => void) => {
     if (request.action === 'CAPTURE_PAGE') {
-      try {
-        const root = document.body || document.documentElement;
-        const fir = extractFIRFromElement(root);
-        copyToClipboard(fir).then(() => {
+      (async () => {
+        try {
+          const root = document.body || document.documentElement;
+          const fir = await extractFIRFromElementAsync(root);
+          await copyToClipboard(fir);
           showToast('Вся страница скопирована в буфер! Вставьте в плагин Figma.');
           sendResponse({ success: true, message: 'Страница скопирована!' });
-        });
-      } catch (err: any) {
-        showToast('Ошибка экстракции: ' + err?.message, true);
-        sendResponse({ success: false, message: err?.message });
-      }
+        } catch (err: any) {
+          showToast('Ошибка экстракции: ' + err?.message, true);
+          sendResponse({ success: false, message: err?.message });
+        }
+      })();
       return true;
     }
 

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   extractBackgroundImageUrl,
   mapObjectFitToScaleMode,
+  resolveImageUrlToBase64,
+  resolveTreeImagesAsync,
 } from '../src/extractor/image-loader.ts';
 import {
   base64ToUint8Array,
@@ -116,4 +118,42 @@ test('renderImageNode creates native Rectangle with ImagePaint or fallback', asy
   assert.equal(placeholderNode.type, 'RECTANGLE');
   assert.ok(placeholderNode.name.includes('Placeholder'));
   assert.equal(placeholderNode.fills[0].type, 'SOLID');
+});
+
+test('resolveImageUrlToBase64 and resolveTreeImagesAsync handle data URIs and offline HTTP URLs gracefully', async () => {
+  const validPng =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const resolvedData = await resolveImageUrlToBase64(validPng);
+  assert.equal(resolvedData, validPng);
+
+  // HTTP URL when fetch/Image is unavailable or fails returns undefined cleanly
+  const resolvedHttp = await resolveImageUrlToBase64('https://example.com/missing.png');
+  assert.equal(resolvedHttp, undefined);
+
+  const tree: FIRNode = {
+    id: 'root',
+    name: 'div',
+    type: 'FRAME',
+    bounds: { x: 0, y: 0, width: 200, height: 200 },
+    visible: true,
+    opacity: 1,
+    clipsContent: false,
+    zIndex: 0,
+    children: [
+      {
+        id: 'img-1',
+        name: 'img.local',
+        type: 'IMAGE',
+        bounds: { x: 0, y: 0, width: 100, height: 100 },
+        visible: true,
+        opacity: 1,
+        clipsContent: false,
+        zIndex: 0,
+        imageData: { base64: validPng, scaleMode: 'FILL' },
+      },
+    ],
+  };
+
+  const out = await resolveTreeImagesAsync(tree);
+  assert.equal(out.children?.[0].imageData?.base64, validPng);
 });

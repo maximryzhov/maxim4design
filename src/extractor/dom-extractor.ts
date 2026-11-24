@@ -11,7 +11,7 @@ import type {
 import { isTextContainer, extractTextData } from './text-builder.ts';
 import { extractElementStyles } from './style-extractor.ts';
 import { serializeSvgElement } from './svg-serializer.ts';
-import { extractImageData } from './image-loader.ts';
+import { extractImageData, resolveTreeImagesAsync } from './image-loader.ts';
 import { extractPseudoElement } from './pseudo-extractor.ts';
 import { analyzeElementLayout } from './layout-analyzer.ts';
 
@@ -257,6 +257,18 @@ function isElementVisible(computed: CSSStyleDeclaration, rect: DOMRect | { width
 export function extractFIRFromElement(rootElement: HTMLElement): FIRNode {
   elementIdCounter = 0;
   return traverseElement(rootElement);
+}
+
+/**
+ * Async DOM extractor that also resolves external HTTP(S) image URLs and compresses
+ * oversized data URIs into Figma-compatible PNG/JPEG base64 strings.
+ */
+export async function extractFIRFromElementAsync(
+  rootElement: HTMLElement,
+  maxImageDimension = 2048
+): Promise<FIRNode> {
+  const tree = extractFIRFromElement(rootElement);
+  return resolveTreeImagesAsync(tree, maxImageDimension);
 }
 
 function traverseElement(element: HTMLElement): FIRNode {
