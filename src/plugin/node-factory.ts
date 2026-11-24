@@ -5,6 +5,7 @@ import { renderTextNode } from './text-renderer.ts';
 import { renderVectorNode } from './vector-renderer.ts';
 import { renderImageNode, createImagePaint } from './image-renderer.ts';
 import { applyStyles } from './style-applier.ts';
+import { sortChildrenByStackingOrder } from './stacking-manager.ts';
 
 /**
  * Safely loads a font with fallback to Inter Regular
@@ -91,9 +92,10 @@ export async function renderFIRNode(
     applyAutoLayout(frame, node.layout);
   }
 
-  // Recursively render children
+  // Recursively render children in proper stacking context order
   if (node.children && node.children.length > 0) {
-    for (const childNode of node.children) {
+    const sortedChildren = sortChildrenByStackingOrder(node.children);
+    for (const childNode of sortedChildren) {
       const childSceneNode = await renderFIRNode(childNode, frame, node.bounds);
       frame.appendChild(childSceneNode);
 
