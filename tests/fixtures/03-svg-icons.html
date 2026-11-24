@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SVG Icons & Vector Graphics Test</title>
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      padding: 40px;
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .icon-grid {
+      display: flex;
+      gap: 20px;
+    }
+    .icon-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 140px;
+    }
+    .icon-box.blue {
+      color: #2563eb;
+    }
+    .icon-box.green {
+      color: #16a34a;
+    }
+    .icon-box.amber {
+      color: #d97706;
+    }
+    .icon-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+    }
+  </style>
+</head>
+<body>
+  <div class="icon-grid">
+    <!-- Blue Checkmark -->
+    <div class="icon-box blue">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+      <span class="icon-title">Verified</span>
+    </div>
+
+    <!-- Green Shield -->
+    <div class="icon-box green">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      </svg>
+      <span class="icon-title">Secure</span>
+    </div>
+
+    <!-- Amber Star -->
+    <div class="icon-box amber">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <span class="icon-title">Rating</span>
+    </div>
+  </div>
+</body>
+</html>

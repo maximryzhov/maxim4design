@@ -35,11 +35,11 @@ export function serializeSvgElement(
   }
 
   // 3. Ensure viewBox or width/height attributes exist
-  const hasWidth = svgElement.hasAttribute('width');
-  const hasHeight = svgElement.hasAttribute('height');
-  const hasViewBox = svgElement.hasAttribute('viewBox');
+  const hasWidth = typeof svgElement.hasAttribute === 'function' ? svgElement.hasAttribute('width') : false;
+  const hasHeight = typeof svgElement.hasAttribute === 'function' ? svgElement.hasAttribute('height') : false;
+  const hasViewBox = typeof svgElement.hasAttribute === 'function' ? svgElement.hasAttribute('viewBox') : false;
 
-  if (!hasViewBox && hasWidth && hasHeight) {
+  if (!hasViewBox && hasWidth && hasHeight && typeof svgElement.getAttribute === 'function') {
     const w = svgElement.getAttribute('width');
     const h = svgElement.getAttribute('height');
     svgString = svgString.replace('<svg', `<svg viewBox="0 0 ${w} ${h}"`);

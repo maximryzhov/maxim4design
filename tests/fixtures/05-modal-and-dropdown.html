@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Modal & Dropdown Stacking Context Test</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Inter, sans-serif;
+      background: #f1f5f9;
+      padding: 40px;
+      height: 100vh;
+      position: relative;
+    }
+    .page-content {
+      max-width: 600px;
+    }
+    .page-content h2 {
+      margin-bottom: 12px;
+      color: #0f172a;
+    }
+    .page-content p {
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    /* Backdrop with blur */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+    }
+
+    /* Modal Dialog */
+    .modal-dialog {
+      position: absolute;
+      top: 100px;
+      left: 100px;
+      width: 440px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      z-index: 110;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .modal-body {
+      font-size: 14px;
+      color: #334155;
+      line-height: 1.5;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .btn-cancel {
+      background: #f1f5f9;
+      color: #475569;
+      border-color: #cbd5e1;
+    }
+    .btn-confirm {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    /* Dropdown popover */
+    .dropdown-menu {
+      position: absolute;
+      top: 360px;
+      left: 100px;
+      width: 200px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 6px 0;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+      z-index: 120;
+    }
+    .dropdown-item {
+      padding: 8px 16px;
+      font-size: 13px;
+      color: #334155;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-content">
+    <h2>Stacking Context & Visual Effects</h2>
+    <p>Verifying backdrop-filter blur, deep z-index sorting, and absolute overlays.</p>
+  </div>
+
+  <div class="modal-backdrop"></div>
+
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <span class="modal-title">Confirm Export</span>
+    </div>
+    <div class="modal-body">
+      Are you sure you want to export all components directly into your active Figma document?
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel">Cancel</button>
+      <button class="btn btn-confirm">Export Now</button>
+    </div>
+  </div>
+
+  <div class="dropdown-menu">
+    <div class="dropdown-item">Copy as SVG</div>
+    <div class="dropdown-item">Save as Component</div>
+    <div class="dropdown-item">Inspect CSS</div>
+  </div>
+</body>
+</html>

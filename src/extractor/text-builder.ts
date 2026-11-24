@@ -130,7 +130,7 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
       const segment: TextSegment = {
         start,
         end,
-        fontFamily: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
+        fontFamily: (computed.fontFamily || 'Inter').split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
         fontWeight,
         fontSize,
         fontStyle,

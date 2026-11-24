@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Typography & Inline Formatting Test</title>
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: #ffffff;
+      color: #111827;
+      line-height: 1.5;
+    }
+    .article {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 18px;
+      font-weight: 500;
+      color: #64748b;
+      margin-bottom: 24px;
+    }
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 32px;
+      margin-bottom: 12px;
+    }
+    p {
+      font-size: 15px;
+      color: #334155;
+      margin-bottom: 16px;
+    }
+    .highlight {
+      background: #fef08a;
+      color: #854d0e;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    a {
+      color: #2563eb;
+      text-decoration: underline;
+      font-weight: 500;
+    }
+    .price-old {
+      text-decoration: line-through;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+    .price-new {
+      font-weight: 700;
+      color: #16a34a;
+      font-size: 16px;
+    }
+    ul {
+      margin: 16px 0;
+      padding-left: 24px;
+    }
+    li {
+      margin-bottom: 8px;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+  <div class="article">
+    <h1>Typography and Inline Styles in maxim4design</h1>
+    <p class="subtitle">Verifying multi-range text rendering, fonts, slants, and decorations</p>
+
+    <h2>Rich Inline Formatting</h2>
+    <p>
+      This paragraph contains a <b>bold phrase</b>, an <i>italic emphasis</i>, and a
+      <span class="highlight">highlighted badge</span> alongside a
+      <a href="https://example.com">clickable link</a>. We also support pricing like
+      <span class="price-old">$199</span> <span class="price-new">$99 special</span>.
+    </p>
+
+    <h2>Key Typography Features</h2>
+    <ul>
+      <li>Preservation of custom font weights from 100 to 900</li>
+      <li>Accurate range segment offsets for colored keywords</li>
+      <li>Support for both underline and strikethrough decorations</li>
+    </ul>
+  </div>
+</body>
+</html>
