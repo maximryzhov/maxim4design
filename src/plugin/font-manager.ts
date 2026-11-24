@@ -43,9 +43,38 @@ export function cleanFontFamily(rawFamily: string): string {
   return first;
 }
 
+const STYLE_WEIGHT_HINTS: Array<[string, number]> = [
+  ['thin', 100],
+  ['hairline', 100],
+  ['extralight', 200],
+  ['ultralight', 200],
+  ['light', 300],
+  ['regular', 400],
+  ['normal', 400],
+  ['book', 400],
+  ['medium', 500],
+  ['semibold', 600],
+  ['demibold', 600],
+  ['extrabold', 800],
+  ['ultrabold', 800],
+  ['bold', 700],
+  ['black', 900],
+  ['heavy', 900],
+];
+
+function inferStyleWeight(styleName: string): number {
+  const norm = styleName.toLowerCase().replace(/\s+/g, '');
+  for (const [token, w] of STYLE_WEIGHT_HINTS) {
+    if (norm.includes(token)) return w;
+  }
+  return 400;
+}
+
 export class FontManager {
   private loadedFonts = new Set<string>();
   private warnings: string[] = [];
+  private availableFontsMap = new Map<string, { canonicalFamily: string; styles: Set<string> }>();
+  private availableFontsInitialized = false;
 
   private getFontKey(font: FontName): string {
     return `${font.family}::${font.style}`;
@@ -60,21 +89,110 @@ export class FontManager {
   }
 
   /**
-   * Safe font loader with a 3-step fallback strategy:
-   * 1. Try requested font { family, style }
-   * 2. Try Inter with the same style { family: 'Inter', style } (preserves visual weight/slant)
-   * 3. Fallback to default { family: 'Inter', style: 'Regular' }
+   * Queries Figma's available fonts via listAvailableFontsAsync() once to enable
+   * smart style matching within the same family before falling back to Inter.
+   */
+  async initAvailableFonts(): Promise<void> {
+    if (this.availableFontsInitialized) return;
+    this.availableFontsInitialized = true;
+
+    try {
+      const figmaGlobal = (globalThis as any).figma;
+      if (!figmaGlobal || typeof figmaGlobal.listAvailableFontsAsync !== 'function') {
+        return;
+      }
+      const list: Array<{ fontName: FontName }> = await figmaGlobal.listAvailableFontsAsync();
+      for (const item of list) {
+        if (!item?.fontName?.family || !item.fontName.style) continue;
+        const key = item.fontName.family.toLowerCase();
+        let entry = this.availableFontsMap.get(key);
+        if (!entry) {
+          entry = { canonicalFamily: item.fontName.family, styles: new Set<string>() };
+          this.availableFontsMap.set(key, entry);
+        }
+        entry.styles.add(item.fontName.style);
+      }
+    } catch (err) {
+      console.warn('[FontManager] listAvailableFontsAsync failed:', err);
+    }
+  }
+
+  private findBestStyleInFamily(
+    familyLower: string,
+    targetStyle: string,
+    targetWeight: number,
+    isItalic: boolean
+  ): FontName | undefined {
+    const entry = this.availableFontsMap.get(familyLower);
+    if (!entry || entry.styles.size === 0) return undefined;
+
+    if (entry.styles.has(targetStyle)) {
+      return { family: entry.canonicalFamily, style: targetStyle };
+    }
+
+    // Check space/case-insensitive match (e.g. "SemiBold" vs "Semi Bold")
+    const targetNorm = targetStyle.toLowerCase().replace(/\s+/g, '');
+    for (const s of entry.styles) {
+      if (s.toLowerCase().replace(/\s+/g, '') === targetNorm) {
+        return { family: entry.canonicalFamily, style: s };
+      }
+    }
+
+    // Pick closest style by italic match + weight distance
+    let bestStyle: string | undefined;
+    let bestScore = Infinity;
+    for (const s of entry.styles) {
+      const sItalic = s.toLowerCase().includes('italic');
+      const italicPenalty = sItalic === isItalic ? 0 : 1000;
+      const weightDiff = Math.abs(inferStyleWeight(s) - targetWeight);
+      const score = italicPenalty + weightDiff;
+      if (score < bestScore) {
+        bestScore = score;
+        bestStyle = s;
+      }
+    }
+
+    return bestStyle ? { family: entry.canonicalFamily, style: bestStyle } : undefined;
+  }
+
+  /**
+   * Safe font loader with a smart family-aware fallback strategy:
+   * 1. Try exact or closest style in requested family (via listAvailableFontsAsync index)
+   * 2. Try requested font { family, style } directly
+   * 3. Try Inter with the same style { family: 'Inter', style }
+   * 4. Fallback to default { family: 'Inter', style: 'Regular' }
    */
   async loadFontSafely(family: string, weight = 400, isItalic = false): Promise<FontName> {
     const cleanedFamily = cleanFontFamily(family);
     const style = mapWeightToFigmaStyle(weight, isItalic);
     const requestedFont: FontName = { family: cleanedFamily, style };
 
-    // 1. Try requested font
+    // 1. Try requested font cache
     if (this.isLoaded(requestedFont)) {
       return requestedFont;
     }
 
+    // 1b. If availableFontsMap is populated, resolve canonical family & closest style
+    const matchedFromIndex = this.findBestStyleInFamily(
+      cleanedFamily.toLowerCase(),
+      style,
+      weight,
+      isItalic
+    );
+    if (matchedFromIndex) {
+      if (this.isLoaded(matchedFromIndex)) {
+        return matchedFromIndex;
+      }
+      try {
+        await figma.loadFontAsync(matchedFromIndex);
+        this.markLoaded(matchedFromIndex);
+        return matchedFromIndex;
+      } catch {
+        // Fall through to standard flow
+      }
+    }
+
+    // 2. Try requested font directly
     try {
       await figma.loadFontAsync(requestedFont);
       this.markLoaded(requestedFont);
@@ -143,6 +261,8 @@ export class FontManager {
   clearCache(): void {
     this.loadedFonts.clear();
     this.warnings = [];
+    this.availableFontsMap.clear();
+    this.availableFontsInitialized = false;
   }
 }
 

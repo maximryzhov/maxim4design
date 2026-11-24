@@ -94,3 +94,31 @@ test('FontManager preloads batch of fonts', async () => {
 
   assert.equal(mock.getCallCount(), 3);
 });
+
+test('FontManager uses listAvailableFontsAsync for smart style matching within same family', async () => {
+  const available = new Set(['Manrope::Regular', 'Manrope::SemiBold', 'Manrope::Bold', 'Inter::Regular']);
+  (globalThis as any).figma = {
+    listAvailableFontsAsync: async () =>
+      Array.from(available).map((key) => {
+        const [family, style] = key.split('::');
+        return { fontName: { family, style } };
+      }),
+    loadFontAsync: async (font: { family: string; style: string }) => {
+      const key = `${font.family}::${font.style}`;
+      if (!available.has(key)) throw new Error(`Not found: ${key}`);
+    },
+  };
+
+  const manager = new FontManager();
+  await manager.initAvailableFonts();
+
+  // Weight 650 maps to "Bold" (<=700), or weight 600 maps to "Semi Bold" -> should match "SemiBold" on Manrope!
+  const semi = await manager.loadFontSafely('Manrope', 600);
+  assert.deepEqual(semi, { family: 'Manrope', style: 'SemiBold' });
+
+  // Weight 550 maps to "Semi Bold" -> matches "SemiBold" on Manrope without falling back to Inter
+  const w550 = await manager.loadFontSafely('Manrope', 550);
+  assert.deepEqual(w550, { family: 'Manrope', style: 'SemiBold' });
+
+  assert.equal(manager.getWarnings().length, 0);
+});

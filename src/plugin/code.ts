@@ -69,6 +69,7 @@ figma.ui.onmessage = async (msg: PluginIncomingMessage) => {
         total: totalNodes,
       });
 
+      await fontManager.initAvailableFonts();
       const requiredFonts = collectFontsFromTree(data);
       if (requiredFonts.length > 0) {
         await fontManager.preloadFonts(requiredFonts);
@@ -114,6 +115,7 @@ figma.ui.onmessage = async (msg: PluginIncomingMessage) => {
         message: `Макет "${rootNode.name}" (${totalNodes} слоев) успешно импортирован на холст!`,
         totalNodes,
         warnings,
+        fonts: data.fonts || [],
       });
     } catch (err) {
       console.error('[maxim4design] Rendering error:', err);

@@ -1,7 +1,7 @@
 ---
 id: TASK-028
 title: Умный подбор стилей через listAvailableFontsAsync и извлечение @font-face шрифтов
-status: pending
+status: done
 priority: high
 phase: 6
 dependencies: [TASK-006, TASK-019, TASK-026]
@@ -33,14 +33,14 @@ tags: [extractor, figma-plugin, fonts, ux]
   - В `src/plugin/ui.html`: в блоке предупреждений об отсутствующих шрифтах отображать список с возможностью скачать/сохранить извлечённые `@font-face` файлы (если они есть в `fir.fonts`) или передать их в локальный мост.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] `FontManager` использует `figma.listAvailableFontsAsync()` для точного и приближённого матчинга стилей одного семейства без лишнего отката на `Inter`.
-- [ ] Экстрактор собирает `@font-face` источники (`woff2`/`ttf`/`data:font/...`) со страницы без падений на cross-origin таблицах стилей.
-- [ ] В UI плагина при замене шрифта отображается понятный список отсутствующих шрифтов и кнопка выгрузки извлечённых файлов шрифтов (при их наличии).
-- [ ] Добавлены unit-тесты для `FontManager` (с моком `listAvailableFontsAsync`) и `font-extractor.ts`.
+- [x] `FontManager` использует `figma.listAvailableFontsAsync()` для точного и приближённого матчинга стилей одного семейства без лишнего отката на `Inter`.
+- [x] Экстрактор собирает `@font-face` источники (`woff2`/`ttf`/`data:font/...`) со страницы без падений на cross-origin таблицах стилей.
+- [x] В UI плагина при замене шрифта отображается понятный список отсутствующих шрифтов и кнопка выгрузки извлечённых файлов шрифтов (при их наличии).
+- [x] Добавлены unit-тесты для `FontManager` (с моком `listAvailableFontsAsync`) и `font-extractor.ts`.
 
 ## 5. Чек-лист реализации
-- [ ] Добавить `initAvailableFonts` и подбор ближайшего стиля в `src/plugin/font-manager.ts`.
-- [ ] Создать `src/extractor/font-extractor.ts` и расширить контракт в `src/types/fir.ts`.
-- [ ] Подключить сбор шрифтов в `dom-extractor.ts` и отображение/скачивание в `src/plugin/ui.html`.
-- [ ] Написать unit-тесты и проверить `npm test`, `npm run typecheck`, `npm run build`.
-- [ ] Переместить карточку в `/done`.
+- [x] Добавить `initAvailableFonts` и подбор ближайшего стиля в `src/plugin/font-manager.ts`.
+- [x] Создать `src/extractor/font-extractor.ts` и расширить контракт в `src/types/fir.ts`.
+- [x] Подключить сбор шрифтов в `dom-extractor.ts` и отображение/скачивание в `src/plugin/ui.html`.
+- [x] Написать unit-тесты и проверить `npm test`, `npm run typecheck`, `npm run build`.
+- [x] Переместить карточку в `/done`.

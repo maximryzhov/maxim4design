@@ -754,17 +754,38 @@
       retryBtn.style.display = 'none';
     }
 
-    function showWarnings(warnings) {
-      if (!warnings || warnings.length === 0) {
+    function showWarnings(warnings, fonts) {
+      const downloadableFonts = (fonts || []).filter((f) => f && f.sourceUrl);
+      if ((!warnings || warnings.length === 0) && downloadableFonts.length === 0) {
         warningsCard.style.display = 'none';
         return;
       }
       warningsList.innerHTML = '';
-      warnings.forEach((w) => {
+      (warnings || []).forEach((w) => {
         const li = document.createElement('li');
         li.textContent = w;
         warningsList.appendChild(li);
       });
+      if (downloadableFonts.length > 0) {
+        const headerLi = document.createElement('li');
+        headerLi.style.marginTop = '6px';
+        headerLi.style.fontWeight = '600';
+        headerLi.textContent = `Извлечённые @font-face шрифты (${downloadableFonts.length}): `;
+        downloadableFonts.slice(0, 8).forEach((f, idx) => {
+          const a = document.createElement('a');
+          a.href = f.sourceUrl;
+          a.download = `${f.family}-${f.weight || '400'}.${f.format || 'woff2'}`;
+          a.target = '_blank';
+          a.textContent = `${f.family} (${f.weight || '400'})`;
+          a.style.color = '#0d99ff';
+          a.style.marginRight = '6px';
+          headerLi.appendChild(a);
+          if (idx < Math.min(downloadableFonts.length, 8) - 1) {
+            headerLi.appendChild(document.createTextNode(', '));
+          }
+        });
+        warningsList.appendChild(headerLi);
+      }
       warningsCard.style.display = 'block';
     }
 
@@ -871,8 +892,8 @@
         setFormProcessing(false);
         hideProgress();
         showAlert('Готово!', msg.message || 'Импорт успешно завершен!', 'success');
-        if (msg.warnings && msg.warnings.length > 0) {
-          showWarnings(msg.warnings);
+        if ((msg.warnings && msg.warnings.length > 0) || (msg.fonts && msg.fonts.some((f) => f.sourceUrl))) {
+          showWarnings(msg.warnings, msg.fonts);
         }
       } else if (msg.type === 'ERROR') {
         setFormProcessing(false);

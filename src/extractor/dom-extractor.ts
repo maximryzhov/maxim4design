@@ -12,6 +12,7 @@ import { isTextContainer, extractTextData } from './text-builder.ts';
 import { extractElementStyles } from './style-extractor.ts';
 import { serializeSvgElement } from './svg-serializer.ts';
 import { extractImageData, resolveTreeImagesAsync, type ExternalImageFetcher } from './image-loader.ts';
+import { extractPageFonts } from './font-extractor.ts';
 import { extractPseudoElement } from './pseudo-extractor.ts';
 import { analyzeElementLayout } from './layout-analyzer.ts';
 
@@ -256,7 +257,14 @@ function isElementVisible(computed: CSSStyleDeclaration, rect: DOMRect | { width
  */
 export function extractFIRFromElement(rootElement: HTMLElement): FIRNode {
   elementIdCounter = 0;
-  return traverseElement(rootElement);
+  const rootNode = traverseElement(rootElement);
+  if (typeof document !== 'undefined' && (rootElement === document.body || rootElement === document.documentElement)) {
+    const fonts = extractPageFonts();
+    if (fonts.length > 0) {
+      rootNode.fonts = fonts;
+    }
+  }
+  return rootNode;
 }
 
 /**

@@ -102,6 +102,14 @@ export interface FIRImageData {
   scaleMode: 'FILL' | 'FIT' | 'CROP';
 }
 
+export interface FIRFontAsset {
+  family: string;
+  weight?: string;
+  style?: string;
+  sourceUrl?: string;
+  format?: string;
+}
+
 export interface FIRNode {
   id: string;
   name: string;
@@ -115,6 +123,7 @@ export interface FIRNode {
   textData?: FIRTextData;
   svgContent?: string;
   imageData?: FIRImageData;
+  fonts?: FIRFontAsset[];
   zIndex: number;
   children?: FIRNode[];
 }
