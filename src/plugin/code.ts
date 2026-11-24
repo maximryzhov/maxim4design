@@ -1,6 +1,6 @@
 // Figma plugin entry point (runs in isolated Figma sandbox)
-import { isFIRNode, validateFIRTree, type FIRNode } from '../types/fir';
-import { renderFIRNode, safeLoadFont } from './node-factory';
+import { isFIRNode, validateFIRTree, type FIRNode } from '../types/fir.ts';
+import { renderFIRNode, safeLoadFont } from './node-factory.ts';
 
 figma.showUI(__html__, { width: 440, height: 580 });
 

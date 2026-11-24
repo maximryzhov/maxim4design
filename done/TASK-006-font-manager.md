@@ -1,7 +1,7 @@
 ---
 id: TASK-006
 title: Сервис безопасной загрузки шрифтов (FontLoader с кэшем и фоллбеками)
-status: pending
+status: done
 priority: critical
 phase: 2
 dependencies: [TASK-005]
@@ -31,14 +31,14 @@ tags: [figma-plugin, typography, fonts, fallback]
   - Метод предварительной пакетной загрузки: `preloadFonts(fonts: Array<{ family: string, weight: number }>)`.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Никакие кастомные шрифты (например, "Geist", "SF Pro Display", редкие Google Fonts) не вызывают падения плагина.
-- [ ] При повторном запросе того же шрифта не происходит лишних вызовов `figma.loadFontAsync` (работает кэш).
-- [ ] Текст сохраняет визуальный вес (Bold, Medium) даже при откате на шрифт Inter.
+- [x] Никакие кастомные шрифты (например, "Geist", "SF Pro Display", редкие Google Fonts) не вызывают падения плагина.
+- [x] При повторном запросе того же шрифта не происходит лишних вызовов `figma.loadFontAsync` (работает кэш).
+- [x] Текст сохраняет визуальный вес (Bold, Medium) даже при откате на шрифт Inter.
 
 ## 5. Чек-лист реализации
-- [ ] Создать `src/plugin/font-manager.ts`.
-- [ ] Реализовать маппер CSS fontWeight -> Figma style name.
-- [ ] Реализовать `loadFontSafely` с трехступенчатым fallback.
-- [ ] Добавить кэширование загруженных шрифтов.
-- [ ] Интегрировать `FontManager` в генератор нод.
-- [ ] Переместить карточку в `/done`.
+- [x] Создать `src/plugin/font-manager.ts`.
+- [x] Реализовать маппер CSS fontWeight -> Figma style name.
+- [x] Реализовать `loadFontSafely` с трехступенчатым fallback.
+- [x] Добавить кэширование загруженных шрифтов.
+- [x] Интегрировать `FontManager` в генератор нод.
+- [x] Переместить карточку в `/done`.

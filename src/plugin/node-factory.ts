@@ -1,26 +1,14 @@
-import type { FIRNode, FIRBounds, RGBAColor } from '../types/fir';
-
-const DEFAULT_FONT: FontName = { family: 'Inter', style: 'Regular' };
-const DEFAULT_BOLD_FONT: FontName = { family: 'Inter', style: 'Bold' };
+import type { FIRNode, FIRBounds, RGBAColor } from '../types/fir.ts';
+import { fontManager } from './font-manager.ts';
 
 /**
  * Safely loads a font with fallback to Inter Regular
  */
 export async function safeLoadFont(family: string = 'Inter', style: string = 'Regular'): Promise<FontName> {
-  const target: FontName = { family, style };
-  try {
-    await figma.loadFontAsync(target);
-    return target;
-  } catch (err) {
-    console.warn(`[maxim4design] Failed to load font ${family} (${style}), falling back to Inter Regular:`, err);
-    try {
-      await figma.loadFontAsync(DEFAULT_FONT);
-      return DEFAULT_FONT;
-    } catch (fallbackErr) {
-      console.error('[maxim4design] Fatal: Even default font Inter Regular failed to load:', fallbackErr);
-      throw fallbackErr;
-    }
-  }
+  const isBold = style.toLowerCase().includes('bold');
+  const weight = isBold ? 700 : 400;
+  const isItalic = style.toLowerCase().includes('italic');
+  return fontManager.loadFontSafely(family, weight, isItalic);
 }
 
 function toFigmaColor(color: RGBAColor): { color: RGB; opacity: number } {
@@ -53,10 +41,9 @@ export async function renderFIRNode(
 
     // Choose font based on weight
     const segment = node.textData?.segments?.[0];
-    const isBold = segment && segment.fontWeight >= 600;
-    const fontName = await safeLoadFont(
+    const fontName = await fontManager.loadFontSafely(
       segment?.fontFamily || 'Inter',
-      isBold ? 'Bold' : 'Regular'
+      segment?.fontWeight ?? 400
     );
 
     textNode.fontName = fontName;

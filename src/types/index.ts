@@ -1,1 +1,1 @@
-export * from './fir';
+export * from './fir.ts';

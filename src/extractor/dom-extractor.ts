@@ -6,7 +6,7 @@ import type {
   FIRStyle,
   BorderSideStyle,
   TextSegment,
-} from '../types/fir';
+} from '../types/fir.ts';
 
 // Tags that should be ignored during extraction
 const IGNORED_TAGS = new Set([

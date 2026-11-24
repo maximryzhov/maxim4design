@@ -1,6 +1,6 @@
 // Browser DOM Extractor entry point
-export * from './dom-extractor';
-import { extractFIRFromElement, parseCssColor } from './dom-extractor';
+export * from './dom-extractor.ts';
+import { extractFIRFromElement, parseCssColor } from './dom-extractor.ts';
 
 // Global console helper for DevTools snippets and browser extensions
 if (typeof window !== 'undefined') {
