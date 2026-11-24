@@ -12,6 +12,7 @@ import { isTextContainer, extractTextData } from './text-builder.ts';
 import { extractElementStyles } from './style-extractor.ts';
 import { serializeSvgElement } from './svg-serializer.ts';
 import { extractImageData } from './image-loader.ts';
+import { extractPseudoElement } from './pseudo-extractor.ts';
 
 // Tags that should be ignored during extraction
 const IGNORED_TAGS = new Set([
@@ -352,8 +353,20 @@ function traverseElement(element: HTMLElement): FIRNode {
 
   // Frame container node
   const children: FIRNode[] = [];
+  // Pseudo-element ::before
+  const beforeNode = extractPseudoElement(element, '::before', bounds);
+  if (beforeNode) {
+    children.push(beforeNode);
+  }
+
   for (const childEl of childElements) {
     children.push(traverseElement(childEl));
+  }
+
+  // Pseudo-element ::after
+  const afterNode = extractPseudoElement(element, '::after', bounds);
+  if (afterNode) {
+    children.push(afterNode);
   }
 
   const bgImageData = extractImageData(element);

@@ -1,7 +1,7 @@
 ---
 id: TASK-013
 title: Детектор и сборщик псевдоэлементов (::before и ::after)
-status: pending
+status: done
 priority: medium
 phase: 3
 dependencies: [TASK-003, TASK-005]
@@ -34,12 +34,12 @@ tags: [pseudo-elements, extractor, dom, styles]
     - Добавлять в `children` родителя: `::before` в начало массива, `::after` в конец.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Иконки шрифтов (например, `<i class="fa fa-star"></i>`, где символ лежит в `::before`) корректно извлекаются и импортируются.
-- [ ] Декоративные полоски и плашки, сделанные через `::after { content: ""; position: absolute; ... }`, не пропадают при импорте.
+- [x] Иконки шрифтов (например, `<i class="fa fa-star"></i>`, где символ лежит в `::before`) корректно извлекаются и импортируются.
+- [x] Декоративные полоски и плашки, сделанные через `::after { content: ""; position: absolute; ... }`, не пропадают при импорте.
 
 ## 5. Чек-лист реализации
-- [ ] Создать `src/extractor/pseudo-extractor.ts`.
-- [ ] Добавить интеграцию с основным циклом `traverseElement`.
-- [ ] Обработать очистку кавычек в свойстве `content`.
-- [ ] Протестировать на странице с иконками FontAwesome и кастомными тумблерами (switch/toggle).
-- [ ] Переместить карточку в `/done`.
+- [x] Создать `src/extractor/pseudo-extractor.ts`.
+- [x] Добавить интеграцию с основным циклом `traverseElement`.
+- [x] Обработать очистку кавычек в свойстве `content`.
+- [x] Протестировать на странице с иконками FontAwesome и кастомными тумблерами (switch/toggle).
+- [x] Переместить карточку в `/done`.
