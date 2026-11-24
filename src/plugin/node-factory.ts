@@ -3,6 +3,7 @@ import { fontManager } from './font-manager.ts';
 import { applyAutoLayout, applyChildSizing } from './layout-engine.ts';
 import { renderTextNode } from './text-renderer.ts';
 import { renderVectorNode } from './vector-renderer.ts';
+import { renderImageNode, createImagePaint } from './image-renderer.ts';
 import { applyStyles } from './style-applier.ts';
 
 /**
@@ -47,6 +48,10 @@ export async function renderFIRNode(
     return renderVectorNode(node, parentFrame, parentBounds);
   }
 
+  if (node.type === 'IMAGE') {
+    return renderImageNode(node, parentFrame, parentBounds);
+  }
+
   if (node.type === 'RECTANGLE') {
     const rect = figma.createRectangle();
     rect.name = node.name || 'Rectangle';
@@ -71,6 +76,15 @@ export async function renderFIRNode(
 
   // Apply visual styles (fills, corner radius, borders, clipsContent)
   applyStyles(frame, node.style, node.clipsContent);
+
+  // Background image fill if present
+  if (node.imageData) {
+    const bgPaint = await createImagePaint(node.imageData);
+    if (bgPaint) {
+      const currentFills = Array.isArray(frame.fills) ? frame.fills : [];
+      frame.fills = [...currentFills, bgPaint];
+    }
+  }
 
   // Auto Layout configuration
   if (node.layout) {

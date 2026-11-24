@@ -11,6 +11,7 @@ import type {
 import { isTextContainer, extractTextData } from './text-builder.ts';
 import { extractElementStyles } from './style-extractor.ts';
 import { serializeSvgElement } from './svg-serializer.ts';
+import { extractImageData } from './image-loader.ts';
 
 // Tags that should be ignored during extraction
 const IGNORED_TAGS = new Set([
@@ -299,6 +300,10 @@ function traverseElement(element: HTMLElement): FIRNode {
   // 2. IMG element handler
   if (tagName === 'IMG') {
     const imgElement = element as HTMLImageElement;
+    const imageData = extractImageData(element) || {
+      base64: imgElement.src || '',
+      scaleMode: 'FILL',
+    };
     return {
       id,
       name,
@@ -309,10 +314,7 @@ function traverseElement(element: HTMLElement): FIRNode {
       clipsContent,
       zIndex,
       style: Object.keys(style).length > 0 ? style : undefined,
-      imageData: {
-        base64: imgElement.src || '',
-        scaleMode: computed.objectFit === 'contain' ? 'FIT' : computed.objectFit === 'none' ? 'CROP' : 'FILL',
-      },
+      imageData,
     };
   }
 
@@ -354,6 +356,8 @@ function traverseElement(element: HTMLElement): FIRNode {
     children.push(traverseElement(childEl));
   }
 
+  const bgImageData = extractImageData(element);
+
   return {
     id,
     name,
@@ -365,6 +369,7 @@ function traverseElement(element: HTMLElement): FIRNode {
     layout,
     zIndex,
     style: Object.keys(style).length > 0 ? style : undefined,
+    imageData: bgImageData,
     children: children.length > 0 ? children : undefined,
   };
 }
