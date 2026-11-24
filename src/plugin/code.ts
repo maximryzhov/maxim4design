@@ -1,5 +1,6 @@
 // Figma plugin entry point (runs in isolated Figma sandbox)
-import { isFIRNode, validateFIRTree } from '../types/fir';
+import { isFIRNode, validateFIRTree, type FIRNode } from '../types/fir';
+import { renderFIRNode, safeLoadFont } from './node-factory';
 
 figma.showUI(__html__, { width: 440, height: 580 });
 
@@ -12,7 +13,7 @@ figma.ui.onmessage = async (msg: PluginIncomingMessage) => {
   console.log('[maxim4design] Message received:', msg.type);
 
   if (msg.type === 'IMPORT_FIR') {
-    const data = msg.payload;
+    const data = msg.payload as FIRNode;
 
     if (!data) {
       figma.ui.postMessage({
@@ -32,12 +33,36 @@ figma.ui.onmessage = async (msg: PluginIncomingMessage) => {
       return;
     }
 
-    console.log('[maxim4design] FIR is valid, ready for node generation:', data);
     figma.ui.postMessage({
       type: 'STATUS',
-      message: 'FIR дерево успешно проверено песочницей плагина',
+      message: 'Загрузка шрифтов и генерация слоев...',
       status: 'info',
     });
+
+    try {
+      // Preload baseline fonts
+      await safeLoadFont('Inter', 'Regular');
+      await safeLoadFont('Inter', 'Bold');
+
+      // Render root node and all children
+      const rootNode = await renderFIRNode(data);
+
+      figma.currentPage.appendChild(rootNode);
+      figma.currentPage.selection = [rootNode];
+      figma.viewport.scrollAndZoomIntoView([rootNode]);
+
+      figma.ui.postMessage({
+        type: 'SUCCESS',
+        message: `Элемент "${rootNode.name}" успешно импортирован на холст!`,
+      });
+    } catch (err) {
+      console.error('[maxim4design] Rendering error:', err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      figma.ui.postMessage({
+        type: 'ERROR',
+        message: `Ошибка рендеринга слоев: ${errMsg}`,
+      });
+    }
   } else if (msg.type === 'CLOSE') {
     figma.closePlugin();
   }
