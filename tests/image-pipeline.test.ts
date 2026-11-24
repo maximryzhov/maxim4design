@@ -196,3 +196,25 @@ test('computeTargetImageDimension scales bounds proportionally within [900, maxD
   assert.equal(computeTargetImageDimension(1800, 1200, 2048), 2048);
   assert.equal(computeTargetImageDimension(0, 0, 2048), 2048);
 });
+
+test('resolveImageUrlToBase64 falls back to localhost:8765/proxy-image when direct CORS fetch fails', async () => {
+  const validPng =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const origFetch = globalThis.fetch;
+  try {
+    (globalThis as any).fetch = async (url: string) => {
+      if (url.startsWith('http://localhost:8765/proxy-image')) {
+        return {
+          ok: true,
+          json: async () => ({ dataUrl: validPng }),
+        };
+      }
+      throw new Error('CORS blocked');
+    };
+
+    const resolved = await resolveImageUrlToBase64('https://alfa-green.ru/photo.jpg');
+    assert.equal(resolved, validPng);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});

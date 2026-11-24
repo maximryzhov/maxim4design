@@ -150,6 +150,40 @@ export async function resolveImageUrlToBase64(
     }
   }
 
+  // Fallback to local bridge proxy (http://localhost:8765/proxy-image) if running
+  if (typeof fetch === 'function') {
+    try {
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : undefined;
+      const timer = controller ? setTimeout(() => controller.abort(), 1500) : undefined;
+      const proxyUrl = `http://localhost:8765/proxy-image?url=${encodeURIComponent(url)}`;
+      const resp = await fetch(proxyUrl, { signal: controller?.signal });
+      if (timer) clearTimeout(timer);
+      if (resp.ok) {
+        const json = await resp.json().catch(() => null);
+        if (json?.dataUrl) {
+          return resolveImageUrlToBase64(json.dataUrl, maxDimension);
+        }
+        if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
+          const blob = await resp.blob();
+          const objUrl = URL.createObjectURL(blob);
+          try {
+            const decoded = await new Promise<string | undefined>((resolve) => {
+              const img = new Image();
+              img.onload = () => resolve(imageToDataUrl(img, maxDimension));
+              img.onerror = () => resolve(undefined);
+              img.src = objUrl;
+            });
+            if (decoded) return decoded;
+          } finally {
+            URL.revokeObjectURL(objUrl);
+          }
+        }
+      }
+    } catch {
+      // Local bridge not running — ignore silently
+    }
+  }
+
   return undefined;
 }
 

@@ -1,7 +1,7 @@
 ---
 id: TASK-030
 title: Универсальная загрузка внешних HTML-картинок (CORS-прокси через мост и очистка alt-артефактов)
-status: pending
+status: done
 priority: critical
 phase: 7
 dependencies: [TASK-020, TASK-024]
@@ -25,12 +25,12 @@ tags: [extractor, images, cors, bridge, bugfix]
   - При `background-image` у контейнеров корректно сохранять `scaleMode` (`FILL` для `cover`, `FIT` для `contain`) и загружать URL через тот же `resolveImageUrlToBase64`.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Внешние картинки с доменов без `Access-Control-Allow-Origin` успешно загружаются в Base64 как через Chrome Extension (`background.ts`), так и через локальный мост (`localhost:8765/proxy-image`).
-- [ ] Фото в `Monkey Grinder`, `НАСТОЯЩИЕ ВПЕЧАТЛЕНИЯ` и 6 карточках проектов отображаются в Figma как реальные изображения.
-- [ ] Добавлены unit-тесты в `tests/image-pipeline.test.ts`.
+- [x] Внешние картинки с доменов без `Access-Control-Allow-Origin` успешно загружаются в Base64 как через Chrome Extension (`background.ts`), так и через локальный мост (`localhost:8765/proxy-image`).
+- [x] Фото в `Monkey Grinder`, `НАСТОЯЩИЕ ВПЕЧАТЛЕНИЯ` и 6 карточках проектов отображаются в Figma как реальные изображения.
+- [x] Добавлены unit-тесты в `tests/image-pipeline.test.ts`.
 
 ## 5. Чек-лист реализации
-- [ ] Добавить fallback-запрос к локальному прокси-мосту в `src/extractor/image-loader.ts`.
-- [ ] Проверить обработку `background-image` URL в `resolveTreeImagesAsync`.
-- [ ] Добавить unit-тесты в `tests/image-pipeline.test.ts` и проверить `npm test`, `npm run build`.
-- [ ] Переместить карточку в `/done`.
+- [x] Добавить fallback-запрос к локальному прокси-мосту в `src/extractor/image-loader.ts`.
+- [x] Проверить обработку `background-image` URL в `resolveTreeImagesAsync`.
+- [x] Добавить unit-тесты в `tests/image-pipeline.test.ts` и проверить `npm test`, `npm run build`.
+- [x] Переместить карточку в `/done`.
