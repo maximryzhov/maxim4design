@@ -8,6 +8,7 @@ import type {
   BorderSideStyle,
   TextSegment,
 } from '../types/fir.ts';
+import { isTextContainer, extractTextData } from './text-builder.ts';
 
 // Tags that should be ignored during extraction
 const IGNORED_TAGS = new Set([
@@ -337,51 +338,24 @@ function traverseElement(element: HTMLElement): FIRNode {
     }
   }
 
-  // Check if element is a pure text container
-  const rawText = element.textContent || '';
-  const trimmedText = rawText.trim();
-  const hasOnlyText = childElements.length === 0 && trimmedText.length > 0;
-
-  if (hasOnlyText) {
-    const textColor = parseCssColor(computed.color) || { r: 0, g: 0, b: 0, a: 1 };
-    const fontSize = parseFloat(computed.fontSize) || 16;
-    const fontWeight = parseInt(computed.fontWeight, 10) || (computed.fontWeight === 'bold' ? 700 : 400);
-    const lineHeightVal = parseFloat(computed.lineHeight);
-    const letterSpacingVal = parseFloat(computed.letterSpacing);
-
-    const segment: TextSegment = {
-      start: 0,
-      end: trimmedText.length,
-      fontFamily: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
-      fontWeight,
-      fontSize,
-      color: textColor,
-      lineHeightPx: !isNaN(lineHeightVal) ? lineHeightVal : undefined,
-      letterSpacingPx: !isNaN(letterSpacingVal) ? letterSpacingVal : undefined,
-      textDecoration:
-        computed.textDecorationLine?.includes('underline')
-          ? 'UNDERLINE'
-          : computed.textDecorationLine?.includes('line-through')
-          ? 'STRIKETHROUGH'
-          : 'NONE',
-    };
-
-    return {
-      id,
-      name,
-      type: 'TEXT',
-      bounds,
-      visible,
-      opacity,
-      clipsContent,
-      layout,
-      zIndex,
-      style: Object.keys(style).length > 0 ? style : undefined,
-      textData: {
-        characters: trimmedText,
-        segments: [segment],
-      },
-    };
+  // Check if element is a text container (leaf text or block with inline tags like b, a, span)
+  if (isTextContainer(element)) {
+    const textData = extractTextData(element);
+    if (textData.characters.trim().length > 0) {
+      return {
+        id,
+        name,
+        type: 'TEXT',
+        bounds,
+        visible,
+        opacity,
+        clipsContent,
+        layout,
+        zIndex,
+        style: Object.keys(style).length > 0 ? style : undefined,
+        textData,
+      };
+    }
   }
 
   // Frame container node

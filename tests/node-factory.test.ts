@@ -45,6 +45,19 @@ function setupFigmaMock() {
     fills: any[] = [];
     lineHeight: any = null;
     letterSpacing: any = null;
+
+    setRangeFontName(start: number, end: number, font: any) {
+      this.fontName = font;
+    }
+    setRangeFontSize(start: number, end: number, size: number) {
+      this.fontSize = size;
+    }
+    setRangeFills(start: number, end: number, fills: any[]) {
+      this.fills = fills;
+    }
+    setRangeTextDecoration() {}
+    setRangeLineHeight() {}
+    setRangeLetterSpacing() {}
   }
 
   class MockRectangleNode extends MockBaseNode {

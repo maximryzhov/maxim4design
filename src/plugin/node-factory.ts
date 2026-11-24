@@ -1,6 +1,7 @@
 import type { FIRNode, FIRBounds, RGBAColor } from '../types/fir.ts';
 import { fontManager } from './font-manager.ts';
 import { applyAutoLayout, applyChildSizing } from './layout-engine.ts';
+import { renderTextNode } from './text-renderer.ts';
 
 /**
  * Safely loads a font with fallback to Inter Regular
@@ -37,42 +38,7 @@ export async function renderFIRNode(
   const height = Math.max(1, node.bounds.height);
 
   if (node.type === 'TEXT') {
-    const textNode = figma.createText();
-    textNode.name = node.name || 'Text';
-
-    // Choose font based on weight
-    const segment = node.textData?.segments?.[0];
-    const fontName = await fontManager.loadFontSafely(
-      segment?.fontFamily || 'Inter',
-      segment?.fontWeight ?? 400
-    );
-
-    textNode.fontName = fontName;
-    textNode.characters = node.textData?.characters || '';
-
-    if (segment) {
-      if (segment.fontSize) {
-        textNode.fontSize = segment.fontSize;
-      }
-      if (segment.color) {
-        const { color, opacity } = toFigmaColor(segment.color);
-        textNode.fills = [{ type: 'SOLID', color, opacity }];
-      }
-      if (segment.lineHeightPx && segment.lineHeightPx > 0) {
-        textNode.lineHeight = { value: segment.lineHeightPx, unit: 'PIXELS' };
-      }
-      if (segment.letterSpacingPx) {
-        textNode.letterSpacing = { value: segment.letterSpacingPx, unit: 'PIXELS' };
-      }
-    }
-
-    textNode.x = relX;
-    textNode.y = relY;
-    textNode.resize(width, height);
-    textNode.opacity = node.opacity;
-    textNode.visible = node.visible;
-
-    return textNode;
+    return renderTextNode(node, parentFrame, parentBounds);
   }
 
   if (node.type === 'RECTANGLE') {
