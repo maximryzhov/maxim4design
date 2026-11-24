@@ -51,15 +51,25 @@ export function imageToDataUrl(
     if (!ctx) return undefined;
 
     ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-    const pngData = canvas.toDataURL('image/png');
-    // If PNG is still > 1.5MB, try JPEG compression if no transparency is needed
+    let pngData = canvas.toDataURL('image/png');
+    // If PNG is still > 1.5MB, try JPEG compression if no transparency is needed,
+    // otherwise downscale alpha PNG to 1280px max dimension to keep FIR JSON compact.
     if (pngData.length > 1_500_000) {
       const jpegData = canvas.toDataURL('image/jpeg', 0.85);
       if (jpegData.length < pngData.length * 0.6) {
-        // Check if image has any transparent pixels on corners/center before replacing PNG
         const sample = ctx.getImageData(0, 0, 1, 1).data;
         if (sample[3] === 255) {
           return jpegData;
+        }
+      }
+      if (Math.max(targetWidth, targetHeight) > 1280) {
+        const scale = 1280 / Math.max(targetWidth, targetHeight);
+        canvas.width = Math.max(1, Math.round(targetWidth * scale));
+        canvas.height = Math.max(1, Math.round(targetHeight * scale));
+        const ctx2 = canvas.getContext('2d');
+        if (ctx2) {
+          ctx2.drawImage(img, 0, 0, canvas.width, canvas.height);
+          pngData = canvas.toDataURL('image/png');
         }
       }
     }
@@ -144,6 +154,19 @@ export async function resolveImageUrlToBase64(
 }
 
 /**
+ * Computes an optimal maxDimension based on the element's rendered bounds.
+ */
+export function computeTargetImageDimension(
+  boundsWidth: number,
+  boundsHeight: number,
+  maxDimension = 2048
+): number {
+  const longest = Math.max(boundsWidth || 0, boundsHeight || 0);
+  if (longest <= 0) return maxDimension;
+  return Math.min(maxDimension, Math.max(900, Math.round(longest * 1.5)));
+}
+
+/**
  * Walks an extracted FIRNode tree and resolves any HTTP(S) or oversized imageData.base64
  * entries asynchronously.
  */
@@ -158,6 +181,11 @@ export async function resolveTreeImagesAsync(
     if (node.imageData?.base64) {
       const target = node.imageData;
       const src = target.base64;
+      const nodeMaxDim = computeTargetImageDimension(
+        node.bounds.width,
+        node.bounds.height,
+        maxDimension
+      );
       if (
         src.startsWith('http://') ||
         src.startsWith('https://') ||
@@ -166,7 +194,7 @@ export async function resolveTreeImagesAsync(
             (!src.startsWith('data:image/png') && !src.startsWith('data:image/jpeg'))))
       ) {
         tasks.push(
-          resolveImageUrlToBase64(src, maxDimension, fetchExternalImage).then((resolved) => {
+          resolveImageUrlToBase64(src, nodeMaxDim, fetchExternalImage).then((resolved) => {
             if (resolved) {
               target.base64 = resolved;
             }

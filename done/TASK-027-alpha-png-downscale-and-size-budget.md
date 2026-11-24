@@ -1,7 +1,7 @@
 ---
 id: TASK-027
 title: Адаптивное сжатие встроенных PNG с альфа-каналом и контроль размера FIR JSON
-status: pending
+status: done
 priority: low
 phase: 6
 dependencies: [TASK-020]
@@ -22,11 +22,11 @@ tags: [extractor, images, performance]
   - Для изображений с прозрачностью, превышающих 1.5 МБ в PNG, применять дополнительное уменьшение масштаба до `1280px` по длинной стороне, чтобы удерживать общий размер FIR JSON в комфортных пределах для буфера обмена и `postMessage`.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Размер `alfagreen-fir.json` существенно уменьшен без заметной потери чёткости на `1440×900`.
-- [ ] Добавлен unit-тест в `tests/image-pipeline.test.ts`.
+- [x] Размер `alfagreen-fir.json` существенно уменьшен без заметной потери чёткости на `1440×900`.
+- [x] Добавлен unit-тест в `tests/image-pipeline.test.ts`.
 
 ## 5. Чек-лист реализации
-- [ ] Передавать `bounds`-ориентированный `maxDimension` в `resolveTreeImagesAsync` (`src/extractor/image-loader.ts`).
-- [ ] Добавить unit-тест в `tests/image-pipeline.test.ts`.
-- [ ] Проверить `npm test` и `npm run build`.
-- [ ] Переместить карточку в `/done`.
+- [x] Передавать `bounds`-ориентированный `maxDimension` в `resolveTreeImagesAsync` (`src/extractor/image-loader.ts`).
+- [x] Добавить unit-тест в `tests/image-pipeline.test.ts`.
+- [x] Проверить `npm test` и `npm run build`.
+- [x] Переместить карточку в `/done`.

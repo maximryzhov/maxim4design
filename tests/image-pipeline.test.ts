@@ -5,6 +5,7 @@ import {
   mapObjectFitToScaleMode,
   resolveImageUrlToBase64,
   resolveTreeImagesAsync,
+  computeTargetImageDimension,
 } from '../src/extractor/image-loader.ts';
 import {
   base64ToUint8Array,
@@ -187,4 +188,11 @@ test('resolveImageUrlToBase64 and resolveTreeImagesAsync handle data URIs and of
     return validPng;
   });
   assert.equal(proxiedOut.children?.[0].imageData?.base64, validPng);
+});
+
+test('computeTargetImageDimension scales bounds proportionally within [900, maxDimension]', () => {
+  assert.equal(computeTargetImageDimension(200, 150, 2048), 900);
+  assert.equal(computeTargetImageDimension(800, 600, 2048), 1200);
+  assert.equal(computeTargetImageDimension(1800, 1200, 2048), 2048);
+  assert.equal(computeTargetImageDimension(0, 0, 2048), 2048);
 });
