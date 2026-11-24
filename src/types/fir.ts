@@ -72,6 +72,7 @@ export interface FIRStyle {
   borders?: FIRBorders;
   shadows?: ShadowEffect[];
   blur?: number;
+  backgroundBlur?: number;
   opacity?: number;
 }
 

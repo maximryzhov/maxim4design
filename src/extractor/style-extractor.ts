@@ -6,6 +6,7 @@ import type {
   RGBAColor,
 } from '../types/fir.ts';
 import { parseCssColor } from './dom-extractor.ts';
+import { parseBoxShadow, parseBlur } from './effects-parser.ts';
 
 export function parseBorderSide(
   widthStr: string,
@@ -86,6 +87,19 @@ export function extractElementStyles(computed: CSSStyleDeclaration): FIRStyle {
   const borders = parseBorders(computed);
   if (borders) {
     style.borders = borders;
+  }
+
+  const shadows = parseBoxShadow(computed.boxShadow);
+  if (shadows.length > 0) {
+    style.shadows = shadows;
+  }
+
+  const { blur, backgroundBlur } = parseBlur(computed);
+  if (blur) {
+    style.blur = blur;
+  }
+  if (backgroundBlur) {
+    style.backgroundBlur = backgroundBlur;
   }
 
   const opacity = parseFloat(computed.opacity);

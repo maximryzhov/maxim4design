@@ -1,7 +1,7 @@
 ---
 id: TASK-012
 title: Парсер и аппликатор теней и эффектов размытия
-status: pending
+status: done
 priority: medium
 phase: 3
 dependencies: [TASK-005]
@@ -30,13 +30,13 @@ tags: [styles, effects, shadows, blur, figma-plugin]
   - Применение: `frame.effects = effectsArray`.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Карточки с современными мягкими тенями (Tailwind CSS: `shadow-md`, `shadow-xl`) выглядят идентично оригиналу.
-- [ ] Внутренние тени (`inset`) корректно маппятся в `Inner shadow`.
-- [ ] Размытие заднего фона в модальных окнах или шапках переносится как `Background blur`.
+- [x] Карточки с современными мягкими тенями (Tailwind CSS: `shadow-md`, `shadow-xl`) выглядят идентично оригиналу.
+- [x] Внутренние тени (`inset`) корректно маппятся в `Inner shadow`.
+- [x] Размытие заднего фона в модальных окнах или шапках переносится как `Background blur`.
 
 ## 5. Чек-лист реализации
-- [ ] Создать `src/extractor/effects-parser.ts`.
-- [ ] Написать парсер составных строк `box-shadow`.
-- [ ] Создать `src/plugin/effects-applier.ts`.
-- [ ] Протестировать импорт модального окна со стеклянным фоном (glassmorphism) и сложными тенями.
-- [ ] Переместить карточку в `/done`.
+- [x] Создать `src/extractor/effects-parser.ts`.
+- [x] Написать парсер составных строк `box-shadow`.
+- [x] Создать `src/plugin/effects-applier.ts`.
+- [x] Протестировать импорт модального окна со стеклянным фоном (glassmorphism) и сложными тенями.
+- [x] Переместить карточку в `/done`.

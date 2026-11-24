@@ -1,4 +1,5 @@
 import type { FIRStyle, RGBAColor } from '../types/fir.ts';
+import { applyEffects } from './effects-applier.ts';
 
 function toFigmaColor(color: RGBAColor): { color: RGB; opacity: number } {
   return {
@@ -119,4 +120,7 @@ export function applyStyles(
       node.strokes = [];
     }
   }
+
+  // 5. Effects (Shadows & Blurs)
+  applyEffects(node, style);
 }
