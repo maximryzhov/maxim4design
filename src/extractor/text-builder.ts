@@ -38,14 +38,19 @@ const TEXT_BLOCK_TAGS = new Set([
 ]);
 
 export function isInlineElement(el: Element): boolean {
-  if (INLINE_TAGS.has(el.tagName.toUpperCase())) {
-    return true;
-  }
   if (typeof window !== 'undefined' && window.getComputedStyle) {
     const computed = window.getComputedStyle(el);
-    return computed.display === 'inline';
+    if (computed.position === 'absolute' || computed.position === 'fixed') {
+      return false;
+    }
+    if (computed.display && computed.display !== 'inline') {
+      return false;
+    }
+    if (computed.display === 'inline') {
+      return true;
+    }
   }
-  return false;
+  return INLINE_TAGS.has(el.tagName.toUpperCase());
 }
 
 export function isTextContainer(element: HTMLElement): boolean {

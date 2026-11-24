@@ -213,9 +213,10 @@ test('extractFIRFromElement extracts valid FIRNode tree', () => {
   assert.equal(titleNode.textData?.segments[0].fontSize, 24);
 
   const buttonNode = fir.children![1];
-  assert.equal(buttonNode.type, 'TEXT');
+  assert.equal(buttonNode.type, 'FRAME');
   assert.equal(buttonNode.style?.backgroundColor?.b, 1);
   assert.equal(buttonNode.style?.borderRadius?.topLeft, 6);
+  assert.equal(buttonNode.children?.[0].type, 'TEXT');
 
   const validation = validateFIRTree(fir);
   assert.equal(validation.valid, true);

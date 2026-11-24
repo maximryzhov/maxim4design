@@ -26,6 +26,7 @@ export function applyStyles(
   }
 
   if (!style) {
+    node.fills = [];
     return;
   }
 

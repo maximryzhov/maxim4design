@@ -28,6 +28,9 @@ const IGNORED_TAGS = new Set([
   'AUDIO',
   'VIDEO',
   'SOURCE',
+  'OPTION',
+  'OPTGROUP',
+  'DATALIST',
 ]);
 
 /**
@@ -326,7 +329,14 @@ function traverseElement(element: HTMLElement): FIRNode {
     const child = element.children[i] as HTMLElement;
     if (!IGNORED_TAGS.has(child.tagName.toUpperCase())) {
       const childComputed = window.getComputedStyle(child);
-      if (childComputed.display !== 'none' && childComputed.visibility !== 'hidden') {
+      const childRect = child.getBoundingClientRect();
+      const hasSize = childRect.width > 0 && childRect.height > 0;
+      const hasChildren = child.children && child.children.length > 0;
+      if (
+        childComputed.display !== 'none' &&
+        childComputed.visibility !== 'hidden' &&
+        (hasSize || (hasChildren && childComputed.overflow !== 'hidden'))
+      ) {
         childElements.push(child);
       }
     }
@@ -336,6 +346,52 @@ function traverseElement(element: HTMLElement): FIRNode {
   if (isTextContainer(element)) {
     const textData = extractTextData(element);
     if (textData.characters.trim().length > 0) {
+      const hasBoxStyling = Boolean(
+        (style.backgroundColor && style.backgroundColor.a > 0) ||
+          style.borders ||
+          (style.shadows && style.shadows.length > 0)
+      );
+
+      if (hasBoxStyling) {
+        const padTop = parseFloat(computed.paddingTop) || 0;
+        const padRight = parseFloat(computed.paddingRight) || 0;
+        const padBottom = parseFloat(computed.paddingBottom) || 0;
+        const padLeft = parseFloat(computed.paddingLeft) || 0;
+        const innerWidth = Math.max(1, bounds.width - padLeft - padRight);
+        const innerHeight = Math.max(1, bounds.height - padTop - padBottom);
+
+        const textChild: FIRNode = {
+          id: `${id}-text`,
+          name: `${name}-text`,
+          type: 'TEXT',
+          bounds: {
+            x: bounds.x + padLeft,
+            y: bounds.y + padTop,
+            width: innerWidth,
+            height: innerHeight,
+          },
+          visible,
+          opacity: 1,
+          clipsContent: false,
+          zIndex: 0,
+          textData,
+        };
+
+        return {
+          id,
+          name,
+          type: 'FRAME',
+          bounds,
+          visible,
+          opacity,
+          clipsContent,
+          layout,
+          zIndex,
+          style: Object.keys(style).length > 0 ? style : undefined,
+          children: [textChild],
+        };
+      }
+
       return {
         id,
         name,
