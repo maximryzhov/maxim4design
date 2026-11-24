@@ -30,6 +30,7 @@ export interface FIRLayout {
   counterAlign: 'MIN' | 'CENTER' | 'MAX' | 'BASELINE';
   sizingHorizontal?: 'FIXED' | 'HUG' | 'FILL';
   sizingVertical?: 'FIXED' | 'HUG' | 'FILL';
+  isAbsolute?: boolean;
 }
 
 export interface BorderSideStyle {

@@ -13,6 +13,7 @@ import { extractElementStyles } from './style-extractor.ts';
 import { serializeSvgElement } from './svg-serializer.ts';
 import { extractImageData } from './image-loader.ts';
 import { extractPseudoElement } from './pseudo-extractor.ts';
+import { analyzeElementLayout } from './layout-analyzer.ts';
 
 // Tags that should be ignored during extraction
 const IGNORED_TAGS = new Set([
@@ -280,7 +281,7 @@ function traverseElement(element: HTMLElement): FIRNode {
   // Build style
   const style = extractElementStyles(computed);
 
-  const layout = parseLayout(computed);
+  const layout = analyzeElementLayout(computed);
 
   // 1. SVG element handler
   if (tagName === 'SVG') {

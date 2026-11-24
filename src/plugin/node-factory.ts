@@ -1,6 +1,6 @@
 import type { FIRNode, FIRBounds, RGBAColor } from '../types/fir.ts';
 import { fontManager } from './font-manager.ts';
-import { applyAutoLayout, applyChildSizing } from './layout-engine.ts';
+import { applyAutoLayout, applyChildSizing, applyChildPositioning } from './layout-engine.ts';
 import { renderTextNode } from './text-renderer.ts';
 import { renderVectorNode } from './vector-renderer.ts';
 import { renderImageNode, createImagePaint } from './image-renderer.ts';
@@ -104,6 +104,10 @@ export async function renderFIRNode(
           horizontal: childNode.layout.sizingHorizontal,
           vertical: childNode.layout.sizingVertical,
         });
+
+        const childRelX = childNode.bounds.x - node.bounds.x;
+        const childRelY = childNode.bounds.y - node.bounds.y;
+        applyChildPositioning(childSceneNode, childNode.layout, childRelX, childRelY);
       }
     }
   }

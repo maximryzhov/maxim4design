@@ -109,3 +109,31 @@ export function applyChildSizing(
     }
   }
 }
+
+/**
+ * Applies layout positioning (ABSOLUTE / AUTO) to a child node inside an Auto Layout container.
+ */
+export function applyChildPositioning(
+  child: SceneNode,
+  layout?: FIRLayout,
+  relX?: number,
+  relY?: number
+): void {
+  if (!layout) return;
+
+  const target = child as unknown as {
+    layoutPositioning?: 'AUTO' | 'ABSOLUTE';
+  };
+
+  if (layout.isAbsolute) {
+    try {
+      target.layoutPositioning = 'ABSOLUTE';
+      if (typeof relX === 'number' && typeof relY === 'number') {
+        child.x = relX;
+        child.y = relY;
+      }
+    } catch {
+      // ignore
+    }
+  }
+}
