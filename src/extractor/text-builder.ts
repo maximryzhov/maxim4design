@@ -105,8 +105,8 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
       const computed = window.getComputedStyle(parentElement);
       let text = normalizeWhitespace(rawText, computed.whiteSpace);
 
-      // If text is purely whitespace at the very start of characters, trim it
-      if (state.characters.length === 0) {
+      // Trim leading whitespace at the very start or collapse consecutive spaces across nodes
+      if (state.characters.length === 0 || state.characters.endsWith(' ') || state.characters.endsWith('\n')) {
         text = text.trimStart();
       }
       if (!text) return;
@@ -148,6 +148,22 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
       state.segments.push(segment);
     } else if (node.nodeType === 1 /* Node.ELEMENT_NODE */) {
       const childEl = node as HTMLElement;
+      const childTag = (childEl.tagName || '').toUpperCase();
+
+      if (childTag === 'BR') {
+        if (state.characters.endsWith(' ')) {
+          state.characters = state.characters.slice(0, -1);
+          if (state.segments.length > 0) {
+            state.segments[state.segments.length - 1].end = state.characters.length;
+          }
+        }
+        state.characters += '\n';
+        if (state.segments.length > 0) {
+          state.segments[state.segments.length - 1].end = state.characters.length;
+        }
+        return;
+      }
+
       const childComputed = window.getComputedStyle(childEl);
       if (childComputed.display === 'none' || childComputed.visibility === 'hidden') {
         return;

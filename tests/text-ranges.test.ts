@@ -323,3 +323,37 @@ test('renderTextNode sets textAutoResize WIDTH_AND_HEIGHT for single-line / nowr
   const rendered = (await renderTextNode(singleLineNode)) as any;
   assert.equal(rendered.textAutoResize, 'WIDTH_AND_HEIGHT');
 });
+
+test('extractTextData converts BR elements to newlines and preserves spaces between inline spans', () => {
+  (globalThis as any).window = {
+    getComputedStyle: (el: any) =>
+      el._style || {
+        display: 'inline',
+        visibility: 'visible',
+        whiteSpace: 'normal',
+        fontFamily: 'Inter',
+        fontWeight: '700',
+        fontSize: '40px',
+        color: '#193800',
+        lineHeight: '40px',
+        letterSpacing: '0px',
+      },
+  };
+
+  const headingEl: any = {
+    tagName: 'H2',
+    getBoundingClientRect: () => ({ x: 0, y: 0, width: 500, height: 120 }),
+    childNodes: [
+      { nodeType: 1, tagName: 'SPAN', childNodes: [{ nodeType: 3, textContent: 'ОТ ИДЕИ' }] },
+      { nodeType: 3, textContent: '\n' },
+      { nodeType: 1, tagName: 'SPAN', childNodes: [{ nodeType: 3, textContent: 'ДО ЗЕЛЁНОЙ' }] },
+      { nodeType: 1, tagName: 'BR' },
+      { nodeType: 3, textContent: 'СТЕНЫ' },
+    ],
+  };
+
+  const data = extractTextData(headingEl);
+  assert.equal(data.characters, 'ОТ ИДЕИ ДО ЗЕЛЁНОЙ\nСТЕНЫ');
+  assert.ok(data.characters.includes('\n'));
+  assert.ok(data.characters.includes('ОТ ИДЕИ ДО ЗЕЛЁНОЙ'));
+});

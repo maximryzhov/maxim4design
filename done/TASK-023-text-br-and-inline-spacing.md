@@ -1,7 +1,7 @@
 ---
 id: TASK-023
 title: Обработка тега br и сохранение пробелов между inline-элементами в text-builder
-status: pending
+status: done
 priority: high
 phase: 6
 dependencies: [TASK-008, TASK-019]
@@ -23,12 +23,12 @@ tags: [extractor, typography, bugfix]
   - При переходе между соседними inline-элементами (`<span>...</span>\n<span>...</span>`) проверять наличие разделяющего пробела/переноса в DOM-узлах (`TextNode`) и не удалять его полностью при нормализации, если `state.characters` не пуст и не заканчивается пробелом/переносом.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Заголовки с `<br>` внутри переносятся в Figma по `\n` без склейки слов.
-- [ ] Соседние `<span>` с пробельным узлом между ними разделяются пробелом.
-- [ ] Добавлены unit-тесты в `tests/text-ranges.test.ts`.
+- [x] Заголовки с `<br>` внутри переносятся в Figma по `\n` без склейки слов.
+- [x] Соседние `<span>` с пробельным узлом между ними разделяются пробелом.
+- [x] Добавлены unit-тесты в `tests/text-ranges.test.ts`.
 
 ## 5. Чек-лист реализации
-- [ ] Добавить обработку `BR` и межузловых пробелов в `src/extractor/text-builder.ts`.
-- [ ] Добавить unit-тесты в `tests/text-ranges.test.ts`.
-- [ ] Проверить `npm test` и `npm run build`.
-- [ ] Переместить карточку в `/done`.
+- [x] Добавить обработку `BR` и межузловых пробелов в `src/extractor/text-builder.ts`.
+- [x] Добавить unit-тесты в `tests/text-ranges.test.ts`.
+- [x] Проверить `npm test` и `npm run build`.
+- [x] Переместить карточку в `/done`.
