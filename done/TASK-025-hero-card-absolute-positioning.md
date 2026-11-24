@@ -1,7 +1,7 @@
 ---
 id: TASK-025
 title: Исправление позиционирования абсолютно спозиционированных карточек (hero-card)
-status: pending
+status: done
 priority: high
 phase: 6
 dependencies: [TASK-015, TASK-021]
@@ -23,11 +23,11 @@ tags: [extractor, figma-plugin, layout, bugfix]
   - В `src/plugin/node-factory.ts`: для дочерних нод в контейнерах `layoutMode === 'NONE'` и для `layoutPositioning = 'ABSOLUTE'` гарантировать установку `x` и `y` **после** всех операций `resize` и `applyAutoLayout` над родителем и самой нодой.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] `.hero-card` располагается в левом нижнем углу hero-секции (`x ≈ 8px` относительно `.hero`), совпадая с эталоном в браузере.
-- [ ] Добавлен регрессионный тест в `tests/grid-fallback.test.ts` или `tests/layout-engine.test.ts`.
+- [x] `.hero-card` располагается в левом нижнем углу hero-секции (`x ≈ 8px` относительно `.hero`), совпадая с эталоном в браузере.
+- [x] Добавлен регрессионный тест в `tests/grid-fallback.test.ts` или `tests/layout-engine.test.ts`.
 
 ## 5. Чек-лист реализации
-- [ ] Диагностировать и исправить расчёт/установку координат в `dom-extractor.ts` / `node-factory.ts`.
-- [ ] Добавить unit-тест для `position: absolute` детей после `resize`.
-- [ ] Проверить `npm test` и `npm run build`.
-- [ ] Переместить карточку в `/done`.
+- [x] Диагностировать и исправить расчёт/установку координат в `dom-extractor.ts` / `node-factory.ts`.
+- [x] Добавить unit-тест для `position: absolute` детей после `resize`.
+- [x] Проверить `npm test` и `npm run build`.
+- [x] Переместить карточку в `/done`.

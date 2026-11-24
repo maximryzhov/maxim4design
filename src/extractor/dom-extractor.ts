@@ -276,10 +276,10 @@ export async function warmupScrollReveal(stepDelayMs = 80): Promise<void> {
   const step = Math.max(300, window.innerHeight || 800);
 
   for (let y = 0; y <= docHeight; y += step) {
-    window.scrollTo(0, y);
+    window.scrollTo({ left: 0, top: y, behavior: 'instant' as ScrollBehavior });
     await new Promise((r) => setTimeout(r, stepDelayMs));
   }
-  window.scrollTo(origX, origY);
+  window.scrollTo({ left: origX, top: origY, behavior: 'instant' as ScrollBehavior });
   await new Promise((r) => setTimeout(r, stepDelayMs));
 }
 

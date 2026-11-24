@@ -182,6 +182,9 @@ export async function renderFIRNode(
 
       frame.appendChild(childSceneNode);
 
+      const childRelX = childNode.bounds.x - node.bounds.x;
+      const childRelY = childNode.bounds.y - node.bounds.y;
+
       if (childNode.layout) {
         if (node.layout && node.layout.mode !== 'NONE' && options?.useAutoLayout !== false) {
           applyChildSizing(childSceneNode, {
@@ -190,9 +193,13 @@ export async function renderFIRNode(
           });
         }
 
-        const childRelX = childNode.bounds.x - node.bounds.x;
-        const childRelY = childNode.bounds.y - node.bounds.y;
         applyChildPositioning(childSceneNode, childNode.layout, childRelX, childRelY);
+      }
+
+      // Ensure exact relative coordinates are preserved when parent is not Auto Layout
+      if (!node.layout || node.layout.mode === 'NONE' || options?.useAutoLayout === false) {
+        childSceneNode.x = childRelX;
+        childSceneNode.y = childRelY;
       }
     }
   }

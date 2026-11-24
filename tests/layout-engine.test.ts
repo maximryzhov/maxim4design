@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyAutoLayout, applyChildSizing } from '../src/plugin/layout-engine.ts';
+import { applyAutoLayout, applyChildSizing, applyChildPositioning } from '../src/plugin/layout-engine.ts';
 import { parseLayout } from '../src/extractor/dom-extractor.ts';
 import type { FIRLayout } from '../src/types/fir.ts';
 
@@ -108,4 +108,31 @@ test('applyAutoLayout sets primaryAxisSizingMode FIXED for SPACE_BETWEEN contain
   assert.equal(mockHeader.counterAxisSizingMode, 'FIXED');
   assert.equal(mockHeader.primaryAxisAlignItems, 'SPACE_BETWEEN');
   assert.equal(mockHeader.counterAxisAlignItems, 'CENTER');
+});
+
+test('applyChildPositioning sets ABSOLUTE and preserves exact relative coordinates', () => {
+  const mockChild: any = {
+    x: 0,
+    y: 0,
+    layoutPositioning: 'AUTO',
+  };
+
+  applyChildPositioning(
+    mockChild,
+    {
+      mode: 'NONE',
+      wrap: false,
+      itemSpacing: 0,
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      primaryAlign: 'MIN',
+      counterAlign: 'MIN',
+      isAbsolute: true,
+    },
+    690,
+    291
+  );
+
+  assert.equal(mockChild.layoutPositioning, 'ABSOLUTE');
+  assert.equal(mockChild.x, 690);
+  assert.equal(mockChild.y, 291);
 });
