@@ -50,6 +50,13 @@ export async function renderTextNode(
     if (firstSeg.fontSize) {
       textNode.fontSize = firstSeg.fontSize;
     }
+    if (firstSeg.lineHeightPx && firstSeg.lineHeightPx > 0) {
+      try {
+        textNode.lineHeight = { value: firstSeg.lineHeightPx, unit: 'PIXELS' };
+      } catch {
+        // Ignore in mocks
+      }
+    }
     if (firstSeg.color) {
       const { color, opacity } = toFigmaColor(firstSeg.color);
       textNode.fills = [{ type: 'SOLID', color, opacity }];

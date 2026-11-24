@@ -120,6 +120,11 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
       const fontWeight =
         parseInt(computed.fontWeight, 10) || (computed.fontWeight === 'bold' ? 700 : 400);
       const lineHeightVal = parseFloat(computed.lineHeight);
+      const effectiveLineHeight = !isNaN(lineHeightVal) && lineHeightVal > 0
+        ? Math.round(lineHeightVal * 100) / 100
+        : fontSize >= 28
+          ? Math.round(fontSize * 1.05 * 100) / 100
+          : undefined;
       const letterSpacingVal = parseFloat(computed.letterSpacing);
 
       let textDecoration: 'NONE' | 'UNDERLINE' | 'STRIKETHROUGH' = 'NONE';
@@ -140,7 +145,7 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
         fontSize,
         fontStyle,
         color: textColor,
-        lineHeightPx: !isNaN(lineHeightVal) ? lineHeightVal : undefined,
+        lineHeightPx: effectiveLineHeight,
         letterSpacingPx: !isNaN(letterSpacingVal) ? letterSpacingVal : undefined,
         textDecoration,
       };

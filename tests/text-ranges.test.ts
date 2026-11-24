@@ -481,3 +481,65 @@ test('renderTextNode ensures minWidth accommodates longest word on condensed-to-
   assert.equal(rendered.textAutoResize, 'HEIGHT');
   assert.ok(rendered.width >= 449, `Expected width >= 449, got ${rendered.width}`);
 });
+
+test('renderTextNode applies node-level lineHeightPx before textAutoResize HEIGHT', async () => {
+  class MockLineHeightTextNode {
+    type = 'TEXT';
+    name = '';
+    characters = '';
+    fontName: any = null;
+    fontSize = 16;
+    lineHeight: any = null;
+    x = 0;
+    y = 0;
+    width = 0;
+    height = 0;
+    opacity = 1;
+    visible = true;
+    textAutoResize = 'NONE';
+    resize(w: number, h: number) {
+      this.width = w;
+      this.height = h;
+    }
+    setRangeFontName() {}
+    setRangeFontSize() {}
+    setRangeFills() {}
+    setRangeLineHeight() {}
+  }
+
+  (globalThis as any).figma = {
+    loadFontAsync: async () => {},
+    createText: () => new MockLineHeightTextNode(),
+  };
+
+  const node: FIRNode = {
+    id: 'lh-heading',
+    name: 'h2.display-title',
+    type: 'TEXT',
+    bounds: { x: 0, y: 0, width: 600, height: 180 },
+    visible: true,
+    opacity: 1,
+    clipsContent: false,
+    zIndex: 0,
+    textData: {
+      characters: 'У КАЖДОГО\nПРОСТРАНСТВА\nСВОЯ ЗЕЛЕНЬ',
+      whiteSpace: 'normal',
+      isSingleLine: false,
+      segments: [
+        {
+          start: 0,
+          end: 34,
+          fontFamily: 'Inter',
+          fontWeight: 900,
+          fontSize: 60,
+          lineHeightPx: 58.8,
+          color: { r: 0.1, g: 0.22, b: 0, a: 1 },
+        },
+      ],
+    },
+  };
+
+  const rendered = (await renderTextNode(node)) as any;
+  assert.deepEqual(rendered.lineHeight, { value: 58.8, unit: 'PIXELS' });
+  assert.equal(rendered.textAutoResize, 'HEIGHT');
+});

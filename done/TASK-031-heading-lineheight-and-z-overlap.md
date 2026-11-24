@@ -1,7 +1,7 @@
 ---
 id: TASK-031
 title: Предотвращение наложения высоких заголовков на соседние блоки (lineHeight и z-index)
-status: pending
+status: done
 priority: high
 phase: 7
 dependencies: [TASK-019, TASK-026]
@@ -24,10 +24,10 @@ tags: [figma-plugin, typography, layout, bugfix]
   - Устанавливать `textNode.lineHeight` на уровне всей ноды и сегментов до установки `textAutoResize = 'HEIGHT'`, чтобы Figma использовала точный браузерный межстрочный интервал (`0.98 * fontSize`) и не раздувала заголовок вниз.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Нижняя строка заголовков `У КАЖДОГО ПРОСТРАНСТВА СВОЯ ЗЕЛЕНЬ` и `ЗЕЛЕНЬ, КОТОРАЯ УЖЕ СТАЛА ЧАСТЬЮ ИНТЕРЬЕРА` не перекрывается нижними карточками.
-- [ ] Добавлен unit-тест в `tests/text-ranges.test.ts`.
+- [x] Нижняя строка заголовков `У КАЖДОГО ПРОСТРАНСТВА СВОЯ ЗЕЛЕНЬ` и `ЗЕЛЕНЬ, КОТОРАЯ УЖЕ СТАЛА ЧАСТЬЮ ИНТЕРЬЕРА` не перекрывается нижними карточками.
+- [x] Добавлен unit-тест в `tests/text-ranges.test.ts`.
 
 ## 5. Чек-лист реализации
-- [ ] Гарантировать передачу и применение `lineHeightPx` в `text-builder.ts` и `text-renderer.ts`.
-- [ ] Добавить unit-тест и проверить `npm test`, `npm run typecheck`, `npm run build`.
-- [ ] Переместить карточку в `/done`.
+- [x] Гарантировать передачу и применение `lineHeightPx` в `text-builder.ts` и `text-renderer.ts`.
+- [x] Добавить unit-тест и проверить `npm test`, `npm run typecheck`, `npm run build`.
+- [x] Переместить карточку в `/done`.
