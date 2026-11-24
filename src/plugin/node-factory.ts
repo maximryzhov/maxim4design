@@ -2,6 +2,7 @@ import type { FIRNode, FIRBounds, RGBAColor } from '../types/fir.ts';
 import { fontManager } from './font-manager.ts';
 import { applyAutoLayout, applyChildSizing } from './layout-engine.ts';
 import { renderTextNode } from './text-renderer.ts';
+import { applyStyles } from './style-applier.ts';
 
 /**
  * Safely loads a font with fallback to Inter Regular
@@ -50,20 +51,7 @@ export async function renderFIRNode(
     rect.opacity = node.opacity;
     rect.visible = node.visible;
 
-    if (node.style?.backgroundColor && node.style.backgroundColor.a > 0) {
-      const { color, opacity } = toFigmaColor(node.style.backgroundColor);
-      rect.fills = [{ type: 'SOLID', color, opacity }];
-    } else {
-      rect.fills = [];
-    }
-
-    if (node.style?.borderRadius) {
-      rect.topLeftRadius = node.style.borderRadius.topLeft;
-      rect.topRightRadius = node.style.borderRadius.topRight;
-      rect.bottomRightRadius = node.style.borderRadius.bottomRight;
-      rect.bottomLeftRadius = node.style.borderRadius.bottomLeft;
-    }
-
+    applyStyles(rect, node.style, node.clipsContent);
     return rect;
   }
 
@@ -73,25 +61,11 @@ export async function renderFIRNode(
   frame.x = relX;
   frame.y = relY;
   frame.resize(width, height);
-  frame.clipsContent = node.clipsContent;
   frame.opacity = node.opacity;
   frame.visible = node.visible;
 
-  // Background fill
-  if (node.style?.backgroundColor && node.style.backgroundColor.a > 0) {
-    const { color, opacity } = toFigmaColor(node.style.backgroundColor);
-    frame.fills = [{ type: 'SOLID', color, opacity }];
-  } else {
-    frame.fills = [];
-  }
-
-  // Border radius
-  if (node.style?.borderRadius) {
-    frame.topLeftRadius = node.style.borderRadius.topLeft;
-    frame.topRightRadius = node.style.borderRadius.topRight;
-    frame.bottomRightRadius = node.style.borderRadius.bottomRight;
-    frame.bottomLeftRadius = node.style.borderRadius.bottomLeft;
-  }
+  // Apply visual styles (fills, corner radius, borders, clipsContent)
+  applyStyles(frame, node.style, node.clipsContent);
 
   // Auto Layout configuration
   if (node.layout) {

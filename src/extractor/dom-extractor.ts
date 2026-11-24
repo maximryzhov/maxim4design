@@ -9,6 +9,7 @@ import type {
   TextSegment,
 } from '../types/fir.ts';
 import { isTextContainer, extractTextData } from './text-builder.ts';
+import { extractElementStyles } from './style-extractor.ts';
 
 // Tags that should be ignored during extraction
 const IGNORED_TAGS = new Set([
@@ -274,19 +275,7 @@ function traverseElement(element: HTMLElement): FIRNode {
   const zIndex = parseInt(computed.zIndex, 10) || 0;
 
   // Build style
-  const style: FIRStyle = {};
-  const bgColor = parseCssColor(computed.backgroundColor);
-  if (bgColor && bgColor.a > 0) {
-    style.backgroundColor = bgColor;
-  }
-  const borderRadius = parseBorderRadius(computed);
-  if (borderRadius) {
-    style.borderRadius = borderRadius;
-  }
-  const borders = parseBorders(computed);
-  if (borders) {
-    style.borders = borders;
-  }
+  const style = extractElementStyles(computed);
 
   const layout = parseLayout(computed);
 

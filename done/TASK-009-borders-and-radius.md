@@ -1,7 +1,7 @@
 ---
 id: TASK-009
 title: Маппинг границ и скруглений (Borders и CornerRadius)
-status: pending
+status: done
 priority: medium
 phase: 2
 dependencies: [TASK-005]
@@ -35,13 +35,13 @@ tags: [styles, borders, corner-radius, figma-plugin]
   - Установка `frame.clipsContent = clipsContent`.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Кнопки с круглыми краями (pill buttons) и карточки с разными радиусами углов переносятся без искажений.
-- [ ] Разделители и табы с `border-bottom` отображаются именно как нижняя граница, а не замкнутый контур.
-- [ ] Контейнеры с `overflow: hidden` получают флаг "Clip content" в Figma.
+- [x] Кнопки с круглыми краями (pill buttons) и карточки с разными радиусами углов переносятся без искажений.
+- [x] Разделители и табы с `border-bottom` отображаются именно как нижняя граница, а не замкнутый контур.
+- [x] Контейнеры с `overflow: hidden` получают флаг "Clip content" в Figma.
 
 ## 5. Чек-лист реализации
-- [ ] Реализовать извлечение раздельных радиусов и границ в экстракторе.
-- [ ] Создать модуль `src/plugin/style-applier.ts`.
-- [ ] Применить независимые обводки и скругления к `FrameNode`.
-- [ ] Протестировать на элементах UI-китов (input, select, pill-badge, tabs).
-- [ ] Переместить карточку в `/done`.
+- [x] Реализовать извлечение раздельных радиусов и границ в экстракторе.
+- [x] Создать модуль `src/plugin/style-applier.ts`.
+- [x] Применить независимые обводки и скругления к `FrameNode`.
+- [x] Протестировать на элементах UI-китов (input, select, pill-badge, tabs).
+- [x] Переместить карточку в `/done`.
