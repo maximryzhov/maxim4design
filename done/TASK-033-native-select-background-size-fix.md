@@ -1,7 +1,7 @@
 ---
 id: TASK-033
 title: Исправление рендера фоновых иконок в элементах select и background-size
-status: pending
+status: done
 priority: low
 phase: 7
 dependencies: [TASK-011]
@@ -22,10 +22,10 @@ tags: [extractor, figma-plugin, images, bugfix]
   - При извлечении `background-image` учитывать `computed.backgroundSize`: если размер фона задан в пикселях (например, `< 40px`) и существенно меньше размеров самого элемента (`bounds.width`), не растягивать его на весь фрейм как `FILL`, а либо выставлять `scaleMode: 'FIT'`, либо пропускать мелкие декоративные data-URI иконки `<select>` (или создавать отдельную иконку по `backgroundPosition`).
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Элемент `select#lead-service` отображается чисто, без растянутого пиксельного квадрата в центре.
-- [ ] Добавлен unit-тест в `tests/image-pipeline.test.ts`.
+- [x] Элемент `select#lead-service` отображается чисто, без растянутого пиксельного квадрата в центре.
+- [x] Добавлен unit-тест в `tests/image-pipeline.test.ts`.
 
 ## 5. Чек-лист реализации
-- [ ] Обработать `backgroundSize` в пикселях в `src/extractor/image-loader.ts`.
-- [ ] Добавить unit-тест и проверить `npm test`, `npm run typecheck`, `npm run build`.
-- [ ] Переместить карточку в `/done`.
+- [x] Обработать `backgroundSize` в пикселях в `src/extractor/image-loader.ts`.
+- [x] Добавить unit-тест и проверить `npm test`, `npm run typecheck`, `npm run build`.
+- [x] Переместить карточку в `/done`.

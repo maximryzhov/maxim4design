@@ -249,6 +249,29 @@ export async function resolveTreeImagesAsync(
 }
 
 /**
+ * Detects tiny decorative background icons (e.g. <select> dropdown arrows)
+ * that would look stretched if applied as a full-frame Figma ImagePaint.
+ */
+export function isSmallBackgroundIcon(
+  tagName: string,
+  backgroundSize: string,
+  backgroundRepeat: string,
+  elementWidth: number
+): boolean {
+  if (tagName === 'SELECT') return true;
+  if (backgroundRepeat === 'no-repeat' && backgroundSize) {
+    const pxMatch = backgroundSize.match(/^(\d+(?:\.\d+)?)px/);
+    if (pxMatch) {
+      const bgW = parseFloat(pxMatch[1]);
+      if (bgW > 0 && bgW <= 32 && elementWidth >= bgW * 3) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
  * Synchronously extracts image data (base64 or direct URL placeholder).
  */
 export function extractImageData(element: HTMLElement): FIRImageData | undefined {
@@ -272,6 +295,19 @@ export function extractImageData(element: HTMLElement): FIRImageData | undefined
   // Check background-image
   const bgUrl = extractBackgroundImageUrl(computed.backgroundImage);
   if (bgUrl) {
+    const rect = typeof element.getBoundingClientRect === 'function'
+      ? element.getBoundingClientRect()
+      : { width: 0 };
+    if (
+      isSmallBackgroundIcon(
+        tagName,
+        computed.backgroundSize || '',
+        computed.backgroundRepeat || '',
+        rect.width
+      )
+    ) {
+      return undefined;
+    }
     const scaleMode = mapObjectFitToScaleMode(computed.backgroundSize);
     return {
       base64: bgUrl,

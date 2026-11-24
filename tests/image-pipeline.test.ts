@@ -6,6 +6,7 @@ import {
   resolveImageUrlToBase64,
   resolveTreeImagesAsync,
   computeTargetImageDimension,
+  isSmallBackgroundIcon,
 } from '../src/extractor/image-loader.ts';
 import {
   base64ToUint8Array,
@@ -217,4 +218,10 @@ test('resolveImageUrlToBase64 falls back to localhost:8765/proxy-image when dire
   } finally {
     globalThis.fetch = origFetch;
   }
+});
+
+test('isSmallBackgroundIcon filters out select arrows and small no-repeat bg icons', () => {
+  assert.equal(isSmallBackgroundIcon('SELECT', '14px 14px', 'no-repeat', 300), true);
+  assert.equal(isSmallBackgroundIcon('DIV', '16px 16px', 'no-repeat', 240), true);
+  assert.equal(isSmallBackgroundIcon('DIV', 'cover', 'no-repeat', 800), false);
 });
