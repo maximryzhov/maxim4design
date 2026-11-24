@@ -1,0 +1,26 @@
+{
+  "name": "maxim4design",
+  "version": "0.1.0",
+  "description": "maxim4design — Open source HTML to Figma engine by Maxim",
+  "main": "dist/code.js",
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "watch": "node esbuild.config.js --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "figma",
+    "figma-plugin",
+    "html-to-figma",
+    "dom-to-figma",
+    "design"
+  ],
+  "author": "Maxim",
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.106.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0"
+  }
+}

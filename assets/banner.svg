@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="100%" height="auto">
+  <defs>
+    <!-- Background Canvas Gradient -->
+    <radialGradient id="bannerBg" cx="35%" cy="50%" r="80%">
+      <stop offset="0%" stop-color="#181a24"/>
+      <stop offset="50%" stop-color="#0f1016"/>
+      <stop offset="100%" stop-color="#090a0d"/>
+    </radialGradient>
+
+    <!-- Mesh Glows -->
+    <radialGradient id="cyanMesh" cx="22%" cy="50%" r="40%">
+      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="purpleMesh" cx="45%" cy="50%" r="45%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pinkMesh" cx="65%" cy="50%" r="35%">
+      <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#f43f5e" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Border Glow Gradient -->
+    <linearGradient id="bannerBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#8b5cf6" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <!-- Title Gradient -->
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#ffffff"/>
+      <stop offset="78%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+
+    <!-- Logo Elements Gradients -->
+    <linearGradient id="bracketGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="slashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="purpleMGrad" x1="20%" y1="10%" x2="80%" y2="90%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="40%" stop-color="#9333ea"/>
+      <stop offset="100%" stop-color="#581c87"/>
+    </linearGradient>
+    <linearGradient id="pinkMGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb7185"/>
+      <stop offset="60%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#e11d48"/>
+    </linearGradient>
+    <linearGradient id="glassFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#7e22ce" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="glassBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#c084fc" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <!-- Subtle Tech Grid Pattern -->
+    <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.025"/>
+    </pattern>
+
+    <filter id="iconShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.7"/>
+    </filter>
+  </defs>
+
+  <style>
+    .brand-title-large {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+      font-weight: 800;
+      font-size: 104px;
+      letter-spacing: -3px;
+    }
+  </style>
+
+  <!-- Banner Card Outer Frame -->
+  <rect x="8" y="8" width="1184" height="304" rx="28" fill="url(#bannerBg)"/>
+  <rect x="8" y="8" width="1184" height="304" rx="28" fill="url(#gridPattern)"/>
+
+  <!-- Ambient Color Glows -->
+  <rect x="8" y="8" width="1184" height="304" rx="28" fill="url(#cyanMesh)"/>
+  <rect x="8" y="8" width="1184" height="304" rx="28" fill="url(#purpleMesh)"/>
+  <rect x="8" y="8" width="1184" height="304" rx="28" fill="url(#pinkMesh)"/>
+
+  <!-- Card Border Stroke -->
+  <rect x="8" y="8" width="1184" height="304" rx="28" fill="none" stroke="url(#bannerBorder)" stroke-width="1.5"/>
+
+  <!-- ================= CENTERED LOCKUP: ICON + LARGE TITLE ================= -->
+  <g transform="translate(130, 0)">
+    <!-- 3D Icon (200x200, vertically centered at y=60) -->
+    <g transform="translate(0, 60)" filter="url(#iconShadow)">
+      <!-- Squircle base -->
+      <rect x="0" y="0" width="200" height="200" rx="54" fill="#1b1c22" stroke="#2e313b" stroke-width="2"/>
+      <rect x="4" y="4" width="192" height="192" rx="50" fill="#15161b"/>
+
+      <!-- Ambient Glow inside icon -->
+      <circle cx="100" cy="100" r="60" fill="#7e22ce" opacity="0.35" filter="blur(20px)"/>
+
+      <!-- Scaled Vector Icon Contents (scale factor approx 0.31) -->
+      <g transform="translate(-62, -60) scale(0.315)">
+        <!-- '<' Bracket -->
+        <path d="M 366 444 L 276 512 L 366 580 L 350 600 L 248 522 L 248 502 L 350 424 Z" fill="url(#bracketGrad)"/>
+        <path d="M 350 424 L 248 502 L 254 506 L 352 429 Z" fill="#7dd3fc" opacity="0.8"/>
+
+        <!-- '/' Slash -->
+        <path d="M 488 368 L 368 644 L 338 644 L 458 368 Z" fill="url(#slashGrad)"/>
+        <path d="M 458 368 L 488 368 L 484 374 L 456 374 Z" fill="#bae6fd" opacity="0.9"/>
+
+        <!-- Selection Box -->
+        <rect x="508" y="348" width="216" height="320" fill="none" stroke="url(#glassBorder)" stroke-width="4.5" opacity="0.85"/>
+
+        <!-- Purple M Ribbon -->
+        <path d="M 444 538 L 512 638 L 602 360 L 696 360 L 676 390 L 610 390 L 534 638 L 498 638 L 444 560 Z" fill="url(#purpleMGrad)"/>
+        <path d="M 512 638 L 602 360 L 618 360 L 528 638 Z" fill="#d8b4fe" opacity="0.4"/>
+
+        <!-- Pink M Stem -->
+        <rect x="610" y="384" width="94" height="258" rx="14" fill="url(#pinkMGrad)"/>
+        <path d="M 610 390 A 6 6 0 0 1 616 384 L 700 384" stroke="#fecdd3" stroke-width="5" fill="none" opacity="0.85"/>
+
+        <!-- Frosted Glass Pill -->
+        <rect x="590" y="394" width="90" height="240" rx="40" fill="url(#glassFill)"/>
+        <rect x="591" y="395" width="88" height="238" rx="39" fill="none" stroke="url(#glassBorder)" stroke-width="4"/>
+
+        <!-- Figma Anchor Handles -->
+        <rect x="498" y="338" width="24" height="24" rx="3" fill="#ffffff"/>
+        <rect x="712" y="338" width="24" height="24" rx="3" fill="#ffffff"/>
+        <rect x="498" y="656" width="24" height="24" rx="3" fill="#ffffff"/>
+        <rect x="712" y="656" width="24" height="24" rx="3" fill="#ffffff"/>
+        <rect x="498" y="496" width="24" height="24" rx="3" fill="#ffffff"/>
+      </g>
+    </g>
+
+    <!-- Large Bold Title (Vertically centered with the icon) -->
+    <text x="245" y="196" class="brand-title-large" fill="url(#titleGrad)">maxim4design</text>
+  </g>
+</svg>

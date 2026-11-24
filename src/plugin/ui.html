@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>maxim4design</title>
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      box-sizing: border-box;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      resize: vertical;
+    }
+    button {
+      margin-top: 12px;
+      background: #18a0fb;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background: #0d8de3;
+    }
+  </style>
+</head>
+<body>
+  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+    <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 16px;">M</div>
+    <h2 style="margin: 0;">maxim4design</h2>
+  </div>
+  <p style="font-size: 12px; color: #666;">Вставьте FIR JSON веб-страницы ниже:</p>
+  <textarea id="jsonInput" placeholder='{"type": "FRAME", ...}'></textarea>
+  <button id="importBtn">Импортировать в Figma</button>
+
+  <script>
+    document.getElementById('importBtn').addEventListener('click', () => {
+      const raw = document.getElementById('jsonInput').value.trim();
+      if (!raw) return;
+      try {
+        const payload = JSON.parse(raw);
+        parent.postMessage({ pluginMessage: { type: 'IMPORT_FIR', payload } }, '*');
+      } catch (err) {
+        alert('Invalid JSON: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
