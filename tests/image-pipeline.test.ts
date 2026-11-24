@@ -156,4 +156,35 @@ test('resolveImageUrlToBase64 and resolveTreeImagesAsync handle data URIs and of
 
   const out = await resolveTreeImagesAsync(tree);
   assert.equal(out.children?.[0].imageData?.base64, validPng);
+
+  // Test external proxy fallback (Chrome Extension background worker simulation)
+  const corsTree: FIRNode = {
+    id: 'root-cors',
+    name: 'div',
+    type: 'FRAME',
+    bounds: { x: 0, y: 0, width: 200, height: 200 },
+    visible: true,
+    opacity: 1,
+    clipsContent: false,
+    zIndex: 0,
+    children: [
+      {
+        id: 'img-cors',
+        name: 'img#hero-card-image',
+        type: 'IMAGE',
+        bounds: { x: 0, y: 0, width: 100, height: 100 },
+        visible: true,
+        opacity: 1,
+        clipsContent: false,
+        zIndex: 0,
+        imageData: { base64: 'https://alfa-green.ru/photo.jpg', scaleMode: 'FILL' },
+      },
+    ],
+  };
+
+  const proxiedOut = await resolveTreeImagesAsync(corsTree, 2048, async (url) => {
+    assert.equal(url, 'https://alfa-green.ru/photo.jpg');
+    return validPng;
+  });
+  assert.equal(proxiedOut.children?.[0].imageData?.base64, validPng);
 });

@@ -4,6 +4,10 @@
   "version": "0.1.0",
   "description": "Capture any web page or element directly into Figma-ready FIR format",
   "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "Capture for Figma"

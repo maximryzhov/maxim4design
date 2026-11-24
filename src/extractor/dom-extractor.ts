@@ -11,7 +11,7 @@ import type {
 import { isTextContainer, extractTextData } from './text-builder.ts';
 import { extractElementStyles } from './style-extractor.ts';
 import { serializeSvgElement } from './svg-serializer.ts';
-import { extractImageData, resolveTreeImagesAsync } from './image-loader.ts';
+import { extractImageData, resolveTreeImagesAsync, type ExternalImageFetcher } from './image-loader.ts';
 import { extractPseudoElement } from './pseudo-extractor.ts';
 import { analyzeElementLayout } from './layout-analyzer.ts';
 
@@ -290,13 +290,13 @@ export async function warmupScrollReveal(stepDelayMs = 80): Promise<void> {
 export async function extractFIRFromElementAsync(
   rootElement: HTMLElement,
   maxImageDimension = 2048,
-  options?: { warmupScroll?: boolean }
+  options?: { warmupScroll?: boolean; fetchExternalImage?: ExternalImageFetcher }
 ): Promise<FIRNode> {
   if (options?.warmupScroll) {
     await warmupScrollReveal();
   }
   const tree = extractFIRFromElement(rootElement);
-  return resolveTreeImagesAsync(tree, maxImageDimension);
+  return resolveTreeImagesAsync(tree, maxImageDimension, options?.fetchExternalImage);
 }
 
 function traverseElement(element: HTMLElement): FIRNode {

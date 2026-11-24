@@ -87,6 +87,14 @@ async function run() {
       target: 'es2020',
       logLevel: 'info',
     },
+    // 5. Extension Background Service Worker
+    {
+      entryPoints: ['src/extension/background.ts'],
+      bundle: true,
+      outfile: 'dist/extension/background.js',
+      target: 'es2020',
+      logLevel: 'info',
+    },
   ];
 
   if (isWatch) {

@@ -1,7 +1,7 @@
 ---
 id: TASK-024
 title: Прокси-загрузка CORS-изображений через Chrome Extension background worker
-status: pending
+status: done
 priority: high
 phase: 6
 dependencies: [TASK-016, TASK-020]
@@ -23,13 +23,13 @@ tags: [extension, images, cors, bugfix]
 - В `src/extractor/image-loader.ts` и `src/extension/content-script.ts`: добавить опциональный callback `fetchExternalImage?: (url: string) => Promise<string | undefined>`, чтобы content script делегировал загрузку проблемных URL в background worker.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Картинки с внешних доменов без CORS-заголовков успешно конвертируются в Base64 при захвате через Chrome Extension.
-- [ ] `img#hero-card-image` на `alfagreen-fitosteny.html` отображается в Figma с реальным фото вместо плейсхолдера.
-- [ ] При недоступности сети сохраняется fallback на плейсхолдер.
+- [x] Картинки с внешних доменов без CORS-заголовков успешно конвертируются в Base64 при захвате через Chrome Extension.
+- [x] `img#hero-card-image` на `alfagreen-fitosteny.html` отображается в Figma с реальным фото вместо плейсхолдера.
+- [x] При недоступности сети сохраняется fallback на плейсхолдер.
 
 ## 5. Чек-лист реализации
-- [ ] Создать `src/extension/background.ts` и добавить в сборку `esbuild.config.js`.
-- [ ] Обновить `src/extension/manifest.json` и `src/extension/content-script.ts`.
-- [ ] Поддержать внешний fetcher в `resolveTreeImagesAsync` (`src/extractor/image-loader.ts`).
-- [ ] Проверить `npm test` и `npm run build`.
-- [ ] Переместить карточку в `/done`.
+- [x] Создать `src/extension/background.ts` и добавить в сборку `esbuild.config.js`.
+- [x] Обновить `src/extension/manifest.json` и `src/extension/content-script.ts`.
+- [x] Поддержать внешний fetcher в `resolveTreeImagesAsync` (`src/extractor/image-loader.ts`).
+- [x] Проверить `npm test` и `npm run build`.
+- [x] Переместить карточку в `/done`.

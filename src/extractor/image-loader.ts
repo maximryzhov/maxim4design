@@ -71,13 +71,16 @@ export function imageToDataUrl(
   }
 }
 
+export type ExternalImageFetcher = (url: string) => Promise<string | undefined>;
+
 /**
  * Asynchronously fetches an external HTTP(S) image URL (or decodes WebP/oversized data URI)
  * and converts it into a Figma-compatible PNG/JPEG base64 data URL.
  */
 export async function resolveImageUrlToBase64(
   url: string,
-  maxDimension = 2048
+  maxDimension = 2048,
+  fetchExternalImage?: ExternalImageFetcher
 ): Promise<string | undefined> {
   if (!url) return undefined;
 
@@ -103,27 +106,41 @@ export async function resolveImageUrlToBase64(
   }
 
   try {
-    if (typeof fetch !== 'function' || typeof Image === 'undefined') {
-      return undefined;
-    }
-    const resp = await fetch(url, { mode: 'cors' });
-    if (!resp.ok) return undefined;
-    const blob = await resp.blob();
-    const objUrl = URL.createObjectURL(blob);
-    try {
-      return await new Promise<string | undefined>((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve(imageToDataUrl(img, maxDimension));
-        img.onerror = () => resolve(undefined);
-        img.src = objUrl;
-      });
-    } finally {
-      URL.revokeObjectURL(objUrl);
+    if (typeof fetch === 'function' && typeof Image !== 'undefined') {
+      const resp = await fetch(url, { mode: 'cors' });
+      if (resp.ok) {
+        const blob = await resp.blob();
+        const objUrl = URL.createObjectURL(blob);
+        try {
+          const decoded = await new Promise<string | undefined>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(imageToDataUrl(img, maxDimension));
+            img.onerror = () => resolve(undefined);
+            img.src = objUrl;
+          });
+          if (decoded) return decoded;
+        } finally {
+          URL.revokeObjectURL(objUrl);
+        }
+      }
     }
   } catch (err) {
-    console.warn('[ImageLoader] Async fetch failed (likely CORS or offline):', url, err);
-    return undefined;
+    console.warn('[ImageLoader] Direct CORS fetch failed, checking fallback proxy:', url, err);
   }
+
+  // Fallback to privileged proxy fetcher (e.g. Chrome Extension background worker)
+  if (fetchExternalImage) {
+    try {
+      const proxiedDataUrl = await fetchExternalImage(url);
+      if (proxiedDataUrl) {
+        return resolveImageUrlToBase64(proxiedDataUrl, maxDimension);
+      }
+    } catch (err) {
+      console.warn('[ImageLoader] Proxy fetch failed:', url, err);
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -132,7 +149,8 @@ export async function resolveImageUrlToBase64(
  */
 export async function resolveTreeImagesAsync(
   root: FIRNode,
-  maxDimension = 2048
+  maxDimension = 2048,
+  fetchExternalImage?: ExternalImageFetcher
 ): Promise<FIRNode> {
   const tasks: Array<Promise<void>> = [];
 
@@ -148,7 +166,7 @@ export async function resolveTreeImagesAsync(
             (!src.startsWith('data:image/png') && !src.startsWith('data:image/jpeg'))))
       ) {
         tasks.push(
-          resolveImageUrlToBase64(src, maxDimension).then((resolved) => {
+          resolveImageUrlToBase64(src, maxDimension, fetchExternalImage).then((resolved) => {
             if (resolved) {
               target.base64 = resolved;
             }

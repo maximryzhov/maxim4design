@@ -33,6 +33,25 @@ function showToast(message: string, isError = false) {
   }, 2500);
 }
 
+async function fetchImageViaBackground(url: string): Promise<string | undefined> {
+  if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+    return undefined;
+  }
+  return new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage({ type: 'FETCH_IMAGE_BASE64', url }, (resp: any) => {
+        if (resp?.ok && typeof resp.dataUrl === 'string') {
+          resolve(resp.dataUrl);
+        } else {
+          resolve(undefined);
+        }
+      });
+    } catch {
+      resolve(undefined);
+    }
+  });
+}
+
 async function trySendToLocalBridge(data: unknown): Promise<boolean> {
   try {
     const controller = new AbortController();
@@ -97,7 +116,9 @@ function startElementInspector() {
     if (!target) return;
 
     try {
-      const fir = await extractFIRFromElementAsync(target);
+      const fir = await extractFIRFromElementAsync(target, 2048, {
+        fetchExternalImage: fetchImageViaBackground,
+      });
       const sentViaBridge = await trySendToLocalBridge(fir);
       if (sentViaBridge) {
         showToast(`Элемент <${target.tagName.toLowerCase()}> отправлен напрямую в Figma!`);
@@ -140,7 +161,10 @@ if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
       (async () => {
         try {
           const root = document.body || document.documentElement;
-          const fir = await extractFIRFromElementAsync(root, 2048, { warmupScroll: true });
+          const fir = await extractFIRFromElementAsync(root, 2048, {
+            warmupScroll: true,
+            fetchExternalImage: fetchImageViaBackground,
+          });
           const sentViaBridge = await trySendToLocalBridge(fir);
           if (sentViaBridge) {
             showToast('Страница отправлена напрямую в Figma!');
