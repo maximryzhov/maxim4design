@@ -1,7 +1,7 @@
 ---
 id: TASK-019
 title: Фикс переноса строк и textAutoResize при fallback-шрифтах
-status: pending
+status: done
 priority: high
 phase: 5
 dependencies: [TASK-006, TASK-008]
@@ -26,12 +26,12 @@ tags: [extractor, figma-plugin, typography, bugfix]
   - Если `whiteSpace === 'nowrap'` или текст однострочный (заголовок, пункт меню, телефон, кнопка), устанавливать `textNode.textAutoResize = 'WIDTH_AND_HEIGHT'` (или `HEIGHT` для многострочных абзацев) вместо жесткой обрезки по ширине браузерного рендера.
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] Однострочные элементы меню, телефоны и заголовки с `white-space: nowrap` не переносятся на вторую строку в Figma при fallback на `Inter`.
-- [ ] Многострочные абзацы корректно переносятся по ширине контейнера (`textAutoResize = 'HEIGHT'`).
-- [ ] Добавлены unit-тесты в `tests/text-ranges.test.ts`.
+- [x] Однострочные элементы меню, телефоны и заголовки с `white-space: nowrap` не переносятся на вторую строку в Figma при fallback на `Inter`.
+- [x] Многострочные абзацы корректно переносятся по ширине контейнера (`textAutoResize = 'HEIGHT'`).
+- [x] Добавлены unit-тесты в `tests/text-ranges.test.ts`.
 
 ## 5. Чек-лист реализации
-- [ ] Обновить `FIRTextData` в `src/types/fir.ts`.
-- [ ] Обновить `src/extractor/text-builder.ts` и `src/plugin/text-renderer.ts`.
-- [ ] Добавить тесты и проверить `npm test` и `npm run build`.
-- [ ] Переместить карточку в `/done`.
+- [x] Обновить `FIRTextData` в `src/types/fir.ts`.
+- [x] Обновить `src/extractor/text-builder.ts` и `src/plugin/text-renderer.ts`.
+- [x] Добавить тесты и проверить `npm test` и `npm run build`.
+- [x] Переместить карточку в `/done`.

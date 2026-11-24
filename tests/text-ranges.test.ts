@@ -149,6 +149,7 @@ test('renderTextNode applies range formatting to native TextNode', async () => {
     height = 0;
     opacity = 1;
     visible = true;
+    textAutoResize: string = 'NONE';
 
     resize(w: number, h: number) {
       this.width = w;
@@ -219,4 +220,106 @@ test('renderTextNode applies range formatting to native TextNode', async () => {
   assert.equal(textNode.characters, 'Hello bold world');
   assert.ok(rangeCalls.some((c) => c.includes('font:[6,10]=Inter:Bold')));
   assert.ok(rangeCalls.some((c) => c.includes('dec:[6,10]=UNDERLINE')));
+  assert.equal(textNode.textAutoResize, 'HEIGHT');
+});
+
+test('extractTextData detects whiteSpace nowrap and single-line height', () => {
+  (globalThis as any).window = {
+    getComputedStyle: (el: any) => el._style,
+  };
+
+  const nowrapEl: any = {
+    tagName: 'A',
+    childNodes: [{ nodeType: 3, textContent: '+7 917 772-35-56' }],
+    getBoundingClientRect: () => ({ x: 0, y: 0, width: 150, height: 22 }),
+    _style: {
+      whiteSpace: 'nowrap',
+      fontFamily: 'Manrope, sans-serif',
+      fontWeight: '700',
+      fontSize: '19px',
+      color: '#111827',
+      lineHeight: '22px',
+      letterSpacing: '0px',
+    },
+  };
+
+  const data = extractTextData(nowrapEl);
+  assert.equal(data.whiteSpace, 'nowrap');
+  assert.equal(data.isSingleLine, true);
+
+  const multilineEl: any = {
+    tagName: 'P',
+    childNodes: [{ nodeType: 3, textContent: 'Long paragraph text spanning multiple lines.' }],
+    getBoundingClientRect: () => ({ x: 0, y: 0, width: 300, height: 80 }),
+    _style: {
+      whiteSpace: 'normal',
+      fontFamily: 'Inter',
+      fontWeight: '400',
+      fontSize: '15px',
+      color: '#334155',
+      lineHeight: '22px',
+      letterSpacing: '0px',
+    },
+  };
+
+  const multiData = extractTextData(multilineEl);
+  assert.equal(multiData.whiteSpace, 'normal');
+  assert.equal(multiData.isSingleLine, false);
+});
+
+test('renderTextNode sets textAutoResize WIDTH_AND_HEIGHT for single-line / nowrap text', async () => {
+  class MockAutoResizeTextNode {
+    type = 'TEXT';
+    name = '';
+    characters = '';
+    fontName: any = null;
+    x = 0;
+    y = 0;
+    width = 0;
+    height = 0;
+    opacity = 1;
+    visible = true;
+    textAutoResize = 'NONE';
+    resize(w: number, h: number) {
+      this.width = w;
+      this.height = h;
+    }
+    setRangeFontName() {}
+    setRangeFontSize() {}
+    setRangeFills() {}
+  }
+
+  (globalThis as any).figma = {
+    loadFontAsync: async () => {},
+    createText: () => new MockAutoResizeTextNode(),
+  };
+
+  const singleLineNode: FIRNode = {
+    id: 'h-1',
+    name: 'span.hero-heading-first',
+    type: 'TEXT',
+    bounds: { x: 0, y: 0, width: 400, height: 110 },
+    visible: true,
+    opacity: 1,
+    clipsContent: false,
+    zIndex: 1,
+    textData: {
+      characters: 'ФИТОСТЕНЫ',
+      whiteSpace: 'nowrap',
+      isSingleLine: true,
+      segments: [
+        {
+          start: 0,
+          end: 9,
+          fontFamily: 'Oswald',
+          fontWeight: 900,
+          fontSize: 110,
+          color: { r: 0.1, g: 0.22, b: 0, a: 1 },
+        },
+      ],
+    },
+  };
+
+  const rendered = (await renderTextNode(singleLineNode)) as any;
+  assert.equal(rendered.textAutoResize, 'WIDTH_AND_HEIGHT');
 });

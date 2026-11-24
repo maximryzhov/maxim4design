@@ -198,15 +198,30 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
     state.segments.push({
       start: 0,
       end: state.characters.length,
-      fontFamily: rootComputed.fontFamily.split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
+      fontFamily: (rootComputed.fontFamily || 'Inter').split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
       fontWeight: parseInt(rootComputed.fontWeight, 10) || 400,
       fontSize: parseFloat(rootComputed.fontSize) || 16,
       color: parseCssColor(rootComputed.color) || { r: 0, g: 0, b: 0, a: 1 },
     });
   }
 
+  const whiteSpace = rootComputed.whiteSpace || 'normal';
+  let isSingleLine = whiteSpace === 'nowrap';
+
+  if (!isSingleLine && !state.characters.includes('\n') && typeof rootElement.getBoundingClientRect === 'function') {
+    const rect = rootElement.getBoundingClientRect();
+    const firstFontSize = state.segments[0]?.fontSize || parseFloat(rootComputed.fontSize) || 16;
+    const rawLineHeight = parseFloat(rootComputed.lineHeight);
+    const effectiveLineHeight = !isNaN(rawLineHeight) ? rawLineHeight : firstFontSize * 1.25;
+    if (rect.height > 0 && rect.height <= Math.max(effectiveLineHeight, firstFontSize * 1.2) * 1.45) {
+      isSingleLine = true;
+    }
+  }
+
   return {
     characters: state.characters,
     segments: state.segments,
+    whiteSpace,
+    isSingleLine,
   };
 }

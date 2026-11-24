@@ -93,6 +93,8 @@ export interface TextSegment {
 export interface FIRTextData {
   characters: string;
   segments: TextSegment[];
+  whiteSpace?: string;
+  isSingleLine?: boolean;
 }
 
 export interface FIRImageData {

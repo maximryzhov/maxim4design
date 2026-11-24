@@ -136,5 +136,12 @@ export async function renderTextNode(
     }
   }
 
+  // Apply textAutoResize after all range fonts/sizes are set to avoid mid-word wrapping on fallback fonts
+  if (textData?.whiteSpace === 'nowrap' || textData?.isSingleLine) {
+    textNode.textAutoResize = 'WIDTH_AND_HEIGHT';
+  } else {
+    textNode.textAutoResize = 'HEIGHT';
+  }
+
   return textNode;
 }
