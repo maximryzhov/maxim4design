@@ -6,6 +6,7 @@ import {
   extractTextData,
 } from '../src/extractor/text-builder.ts';
 import { renderTextNode } from '../src/plugin/text-renderer.ts';
+import { fontManager } from '../src/plugin/font-manager.ts';
 import type { FIRNode } from '../src/types/fir.ts';
 
 test('normalizeWhitespace handles normal vs pre whitespace collapsing', () => {
@@ -356,4 +357,65 @@ test('extractTextData converts BR elements to newlines and preserves spaces betw
   assert.equal(data.characters, 'ОТ ИДЕИ ДО ЗЕЛЁНОЙ\nСТЕНЫ');
   assert.ok(data.characters.includes('\n'));
   assert.ok(data.characters.includes('ОТ ИДЕИ ДО ЗЕЛЁНОЙ'));
+});
+
+test('renderTextNode compensates width for multiline large headings when font falls back to Inter', async () => {
+  fontManager.clearCache();
+  class MockHeadingTextNode {
+    type = 'TEXT';
+    name = '';
+    characters = '';
+    fontName: any = null;
+    x = 0;
+    y = 0;
+    width = 0;
+    height = 0;
+    opacity = 1;
+    visible = true;
+    textAutoResize = 'NONE';
+    resize(w: number, h: number) {
+      this.width = w;
+      this.height = h;
+    }
+    setRangeFontName() {}
+    setRangeFontSize() {}
+    setRangeFills() {}
+  }
+
+  (globalThis as any).figma = {
+    loadFontAsync: async (f: { family: string; style: string }) => {
+      if (f.family === 'Oswald') throw new Error('Font not in Figma');
+    },
+    createText: () => new MockHeadingTextNode(),
+  };
+
+  const headingNode: FIRNode = {
+    id: 'display-h2',
+    name: 'h2.display-title',
+    type: 'TEXT',
+    bounds: { x: 0, y: 0, width: 400, height: 200 },
+    visible: true,
+    opacity: 1,
+    clipsContent: false,
+    zIndex: 0,
+    textData: {
+      characters: 'ЗЕЛЕНЬ\nНА СВОЁМ МЕСТЕ',
+      whiteSpace: 'normal',
+      isSingleLine: false,
+      segments: [
+        {
+          start: 0,
+          end: 22,
+          fontFamily: 'Oswald',
+          fontWeight: 900,
+          fontSize: 64,
+          color: { r: 0.1, g: 0.22, b: 0, a: 1 },
+        },
+      ],
+    },
+  };
+
+  const rendered = (await renderTextNode(headingNode)) as any;
+  assert.equal(rendered.textAutoResize, 'HEIGHT');
+  assert.equal(rendered.width, 460); // 400 * 1.15
 });

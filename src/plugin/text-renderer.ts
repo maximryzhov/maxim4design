@@ -1,5 +1,5 @@
 import type { FIRNode, FIRBounds, RGBAColor } from '../types/fir.ts';
-import { fontManager } from './font-manager.ts';
+import { fontManager, cleanFontFamily } from './font-manager.ts';
 
 function toFigmaColor(color: RGBAColor): { color: RGB; opacity: number } {
   return {
@@ -137,9 +137,16 @@ export async function renderTextNode(
   }
 
   // Apply textAutoResize after all range fonts/sizes are set to avoid mid-word wrapping on fallback fonts
+  const requestedFamily = cleanFontFamily(firstSeg?.fontFamily || 'Inter').toLowerCase();
+  const usedFallbackFont = baseFont.family.toLowerCase() !== requestedFamily;
+
   if (textData?.whiteSpace === 'nowrap' || textData?.isSingleLine) {
     textNode.textAutoResize = 'WIDTH_AND_HEIGHT';
   } else {
+    if (usedFallbackFont && (firstSeg?.fontSize ?? 0) >= 28) {
+      // Compensate for wider fallback font (e.g. Inter replacing condensed Oswald)
+      textNode.resize(Math.round(width * 1.15), height);
+    }
     textNode.textAutoResize = 'HEIGHT';
   }
 
