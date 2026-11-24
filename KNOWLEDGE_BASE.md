@@ -19,6 +19,10 @@
    - [Баг 9: Картинки: background-image, object-fit и асинхронность](#баг-9-картинки-background-image-object-fit-и-асинхронность)
    - [Баг 10: Парсинг теней (box-shadow) и фильтров размытия](#баг-10-парсинг-теней-box-shadow-и-фильтров-размытия)
    - [Баг 11: Границы элементов (Borders с разными сторонами)](#баг-11-границы-элементов-borders-с-разными-сторонами)
+   - [Баг 12: Блочные `<a>`/`<span>` ошибочно считаются текстом](#баг-12-блочные-aspan-ошибочно-считаются-текстом)
+   - [Баг 13: Текст в смешанных контейнерах и form controls](#баг-13-текст-в-смешанных-контейнерах-и-form-controls)
+   - [Баг 14: `text-align` и `text-transform` не переносятся в FIR](#баг-14-text-align-и-text-transform-не-переносятся-в-fir)
+   - [Баг 15: CSS-трансформации (`scaleX`, `rotate`) игнорируются](#баг-15-css-трансформации-scalex-rotate-игнорируются)
 4. [Матрица трансляции: CSS -> Figma API](#4-матрица-трансляции-css---figma-api)
 5. [Рекомендуемый стек и пошаговый план разработки](#5-рекомендуемый-стек-и-пошаговый-план-разработки)
 
@@ -116,6 +120,8 @@ async function safeLoadFont(family: string, weight: string = "Regular"): Promise
   }
 }
 ```
+
+* **Обход для кастомных шрифтов (как в html.to.design):** Plugin API не умеет устанавливать бинарные шрифты. Плагин отдаёт пользователю исходные `@font-face`-файлы (`SOURCEURL` из FIR) кнопкой «Скачать отсутствующие шрифты», после чего шрифт ставится локально (TTF/OTF) или загружается админом в организацию. `SUCCESS` передаёт только `missingFonts`, а не все бинарники. Реализовано в [TASK-041](file:///e:/Projects/Dev/html2design/done/TASK-041-missing-fonts-download-ui.md); установка остаётся ручной, токен Figma для неё не нужен.
 
 ---
 
@@ -258,6 +264,30 @@ function extractPseudoElement(element, pseudo) {
   * `node.strokeBottomWeight = parseFloat(styles.borderBottomWidth)`
   * `node.strokeLeftWeight = parseFloat(styles.borderLeftWidth)`
   * `node.strokeRightWeight = parseFloat(styles.borderRightWidth)`
+
+---
+
+### Баг 12: Блочные `<a>`/`<span>` ошибочно считаются текстом
+* **Проблема:** `isTextContainer()` безусловно относит `A`, `SPAN` и другие инлайн-теги к текстовым контейнерам, не проверяя `computed.display`. Карточка `<a class="product-card">` с CSS `display:flex` (внутри `<div class="product-image"><img></div><h3>…</h3>`) превращается в один TEXT-узел: картинки, заголовки и CTA теряются, а текст склеивается в одну строку. На `alfagreen-fitosteny.html` это 14 контейнеров и 10 фотографий (4 карточки услуг + 6 карточек проектов).
+* **Решение:** Считать тег текстовым контейнером только при `display: inline`/`inline-*`. Для `flex/grid/block` с `img`/`svg`/`div` внутри идти по ветке FRAME. См. [TASK-034](file:///e:/Projects/Dev/html2design/tasks/TASK-034-block-level-inline-container-flattening.md).
+
+---
+
+### Баг 13: Текст в смешанных контейнерах и form controls
+* **Проблема:** `traverseElement()` обходит только `element.children`, поэтому прямые текстовые узлы (`Node.TEXT_NODE`) вне text-контейнера теряются. В результате у `<summary>Всегда зелёные<span class="faq-plus">+</span></summary>` пропадает вопрос и остаётся только «+», у `<label>Номер телефона <span>*</span><input></label>` — только звёздочка. Сами `input/select/textarea` рендерятся пустыми прямоугольниками без `value`, `placeholder`, опций и границ.
+* **Решение:** Обходить `childNodes` и создавать TEXT для текстовых узлов (bounds через `Range.getBoundingClientRect()`); для `input/textarea/select` брать `value`/`placeholder`/выбранный `<option>` и стили рамок. См. [TASK-035](file:///e:/Projects/Dev/html2design/tasks/TASK-035-mixed-text-nodes-dropped.md), [TASK-036](file:///e:/Projects/Dev/html2design/tasks/TASK-036-form-controls-rendering.md).
+
+---
+
+### Баг 14: `text-align` и `text-transform` не переносятся в FIR
+* **Проблема:** В `FIRTextData` нет этих полей, поэтому все TEXT-узлы рендерятся с `textAlignHorizontal: "LEFT"` и исходным регистром. Hero-заголовок (`right` для первой строки) уезжает, навигация `text-transform: uppercase` отображается как «Услуги» вместо «УСЛУГИ».
+* **Решение:** Добавить `textAlign`/`textTransform` в `FIRTextData`, заполнять из `getComputedStyle` и применять в `renderTextNode()` до `textAutoResize`. См. [TASK-037](file:///e:/Projects/Dev/html2design/tasks/TASK-037-text-align-and-text-transform.md).
+
+---
+
+### Баг 15: CSS-трансформации (`scaleX`, `rotate`) игнорируются
+* **Проблема:** Извлекаются только `bounds` (уже трансформированные `getBoundingClientRect`), а `transform: scaleX(-1)` у `img.contact-plant` теряется — растение в Figma незеркально. `object-position` также не учитывается при `scaleMode: FILL`.
+* **Решение:** Разбирать `computed.transform` в матрицу (`matrix(a,b,c,d,e,f)`), передавать `scaleX/scaleY/rotation/translate` в FIR и применять через `relativeTransform`/`imageTransform`; хранить исходные `offsetWidth/offsetHeight`, чтобы не применять масштаб дважды. См. [TASK-039](file:///e:/Projects/Dev/html2design/tasks/TASK-039-css-transform-support.md).
 
 ---
 

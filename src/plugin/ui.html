@@ -395,6 +395,111 @@
       margin: 0;
     }
 
+    /* Missing fonts download card */
+    .fonts-card {
+      display: none;
+      background: #eef6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+      font-size: 10.5px;
+      color: #1e3a8a;
+    }
+
+    .fonts-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .fonts-desc {
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+
+    .fonts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .font-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #ffffff;
+      border: 1px solid #dbeafe;
+      border-radius: var(--radius-sm);
+      padding: 4px 8px;
+    }
+
+    .font-row .font-name {
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .font-row .font-format {
+      color: #64748b;
+      font-size: 9.5px;
+      text-transform: uppercase;
+    }
+
+    .font-download {
+      flex: 0 0 auto;
+      padding: 3px 8px;
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #1d4ed8;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .font-download:hover {
+      background: #dbeafe;
+    }
+
+    .fonts-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .fonts-download-all {
+      padding: 4px 10px;
+      border: none;
+      border-radius: 6px;
+      background: #2563eb;
+      color: #ffffff;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .fonts-download-all:hover {
+      background: #1d4ed8;
+    }
+
+    .fonts-instructions {
+      margin-top: 6px;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #1e40af;
+    }
+
+    .fonts-note {
+      margin-top: 4px;
+      font-size: 9.5px;
+      color: #b45309;
+    }
+
     /* Footer Buttons */
     .footer {
       padding: 12px 16px;
@@ -543,6 +648,18 @@
       <div class="warnings-title">⚠️ Предупреждения:</div>
       <ul class="warnings-list" id="warningsList"></ul>
     </div>
+
+    <!-- Missing fonts download card -->
+    <div class="fonts-card" id="fontsCard">
+      <div class="fonts-title">🔤 Отсутствующие шрифты</div>
+      <div class="fonts-desc" id="fontsDesc"></div>
+      <div class="fonts-list" id="fontsList"></div>
+      <div class="fonts-actions">
+        <button type="button" class="fonts-download-all" id="downloadAllFontsBtn">Скачать все</button>
+        <span class="font-format">TTF / OTF</span>
+      </div>
+      <div class="fonts-instructions" id="fontsInstructions"></div>
+    </div>
   </div>
 
   <!-- Footer Actions -->
@@ -664,6 +781,11 @@
     const alertMessage = document.getElementById('alertMessage');
     const warningsCard = document.getElementById('warningsCard');
     const warningsList = document.getElementById('warningsList');
+    const fontsCard = document.getElementById('fontsCard');
+    const fontsDesc = document.getElementById('fontsDesc');
+    const fontsList = document.getElementById('fontsList');
+    const downloadAllFontsBtn = document.getElementById('downloadAllFontsBtn');
+    const fontsInstructions = document.getElementById('fontsInstructions');
 
     const charCountLabel = document.getElementById('charCountLabel');
     const detectedNodeLabel = document.getElementById('detectedNodeLabel');
@@ -702,6 +824,7 @@
         updateCounters();
         hideAlert();
         hideWarnings();
+        hideFonts();
         showAlert('Вставлено из буфера', `Загружено ${text.length.toLocaleString()} символов.`, 'info');
       } catch (err) {
         console.warn('Clipboard read failed:', err);
@@ -714,6 +837,7 @@
       updateCounters();
       hideAlert();
       hideWarnings();
+      hideFonts();
       showAlert('Демо-данные загружены', 'Нажмите «Импортировать в Figma» для проверки рендеринга.', 'info');
     });
 
@@ -722,6 +846,7 @@
       updateCounters();
       hideAlert();
       hideWarnings();
+      hideFonts();
       hideProgress();
     });
 
@@ -754,38 +879,18 @@
       retryBtn.style.display = 'none';
     }
 
-    function showWarnings(warnings, fonts) {
-      const downloadableFonts = (fonts || []).filter((f) => f && f.sourceUrl);
-      if ((!warnings || warnings.length === 0) && downloadableFonts.length === 0) {
+    function showWarnings(warnings) {
+      if (!warnings || warnings.length === 0) {
         warningsCard.style.display = 'none';
+        warningsList.innerHTML = '';
         return;
       }
       warningsList.innerHTML = '';
-      (warnings || []).forEach((w) => {
+      warnings.forEach((w) => {
         const li = document.createElement('li');
         li.textContent = w;
         warningsList.appendChild(li);
       });
-      if (downloadableFonts.length > 0) {
-        const headerLi = document.createElement('li');
-        headerLi.style.marginTop = '6px';
-        headerLi.style.fontWeight = '600';
-        headerLi.textContent = `Извлечённые @font-face шрифты (${downloadableFonts.length}): `;
-        downloadableFonts.slice(0, 8).forEach((f, idx) => {
-          const a = document.createElement('a');
-          a.href = f.sourceUrl;
-          a.download = `${f.family}-${f.weight || '400'}.${f.format || 'woff2'}`;
-          a.target = '_blank';
-          a.textContent = `${f.family} (${f.weight || '400'})`;
-          a.style.color = '#0d99ff';
-          a.style.marginRight = '6px';
-          headerLi.appendChild(a);
-          if (idx < Math.min(downloadableFonts.length, 8) - 1) {
-            headerLi.appendChild(document.createTextNode(', '));
-          }
-        });
-        warningsList.appendChild(headerLi);
-      }
       warningsCard.style.display = 'block';
     }
 
@@ -793,6 +898,153 @@
       warningsCard.style.display = 'none';
       warningsList.innerHTML = '';
     }
+
+    let missingFonts = [];
+
+    function fontSignature(font) {
+      const url = String(font.sourceUrl || '');
+      if (!url.startsWith('data:')) return '';
+      const comma = url.indexOf(',');
+      if (comma < 0) return '';
+      try {
+        return atob(url.slice(comma + 1, comma + 9));
+      } catch {
+        return '';
+      }
+    }
+
+    function fontExtension(font) {
+      // Prefer the real font signature over the CSS format hint: @font-face often
+      // declares format("truetype") for CFF/OTF files ("OTTO").
+      const signature = fontSignature(font);
+      if (signature.startsWith('OTTO')) return 'otf';
+      if (signature.startsWith('wOFF')) return 'woff';
+      if (signature.startsWith('wOF2')) return 'woff2';
+      if (signature.startsWith('true') || signature.startsWith('typ1')) return 'ttf';
+      if (signature && signature.charCodeAt(0) === 0) return 'ttf';
+
+      const fmt = String(font.format || '').toLowerCase();
+      const url = String(font.sourceUrl || '');
+      if (fmt.includes('woff2') || url.includes('font/woff2') || url.includes('.woff2')) return 'woff2';
+      if (fmt.includes('woff') || url.includes('font/woff') || url.includes('.woff')) return 'woff';
+      if (fmt.includes('otf') || fmt.includes('opentype') || url.includes('font/otf') || url.includes('.otf')) return 'otf';
+      return 'ttf';
+    }
+
+    function fontFileBase(font) {
+      const family = String(font.family || 'font').replace(/[^a-z0-9._-]+/gi, '-');
+      const weight = String(font.weight || '400').replace(/[^a-z0-9._-]+/gi, '-');
+      return `${family}-${weight}`;
+    }
+
+    function dataUrlToBlob(dataUrl) {
+      const comma = dataUrl.indexOf(',');
+      if (comma < 0) throw new Error('Некорректный data URL');
+      const meta = dataUrl.slice(0, comma);
+      const payload = dataUrl.slice(comma + 1);
+      const mimeMatch = meta.match(/^data:([^;,]+)/);
+      const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+
+      if (meta.indexOf(';base64') !== -1) {
+        const binary = atob(payload);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return new Blob([bytes], { type: mime });
+      }
+      return new Blob([decodeURIComponent(payload)], { type: mime });
+    }
+
+    function downloadFont(font) {
+      const url = String(font.sourceUrl || '');
+      if (!url) return false;
+
+      if (!url.startsWith('data:')) {
+        // Remote font: let the browser open/download it directly.
+        window.open(url, '_blank');
+        return true;
+      }
+
+      try {
+        const blob = dataUrlToBlob(url);
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = `${fontFileBase(font)}.${fontExtension(font)}`;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+        return true;
+      } catch (err) {
+        console.error('Font download failed:', err);
+        showAlert('Не удалось скачать шрифт', String((err && err.message) || err), 'error');
+        return false;
+      }
+    }
+
+    function downloadAllFonts() {
+      const downloadable = missingFonts.filter((f) => f && f.sourceUrl);
+      downloadable.forEach((font, index) => {
+        setTimeout(() => downloadFont(font), index * 400);
+      });
+    }
+
+    function showMissingFonts(fonts) {
+      missingFonts = (fonts || []).filter((f) => f && f.sourceUrl);
+      if (missingFonts.length === 0) {
+        fontsCard.style.display = 'none';
+        fontsList.innerHTML = '';
+        fontsDesc.textContent = '';
+        fontsInstructions.textContent = '';
+        return;
+      }
+
+      fontsDesc.textContent = `Эти шрифты используются на странице, но не установлены в Figma (${missingFonts.length}). Скачайте файлы и установите их — при следующем импорте плагин возьмёт настоящие шрифты.`;
+      fontsList.innerHTML = '';
+
+      missingFonts.forEach((font) => {
+        const row = document.createElement('div');
+        row.className = 'font-row';
+
+        const name = document.createElement('span');
+        name.className = 'font-name';
+        name.textContent = `${font.family} ${font.weight || '400'}`;
+
+        const format = document.createElement('span');
+        format.className = 'font-format';
+        format.textContent = fontExtension(font);
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'font-download';
+        button.textContent = 'Скачать';
+        button.addEventListener('click', () => downloadFont(font));
+
+        row.appendChild(name);
+        row.appendChild(format);
+        row.appendChild(button);
+        fontsList.appendChild(row);
+      });
+
+      const hasWebFont = missingFonts.some((f) => ['woff', 'woff2'].includes(fontExtension(f)));
+      fontsInstructions.textContent = hasWebFont
+        ? 'Figma устанавливает только TTF/OTF. Файлы WOFF/WOFF2 сначала сконвертируйте в TTF (например, fonttools), затем установите в ОС.'
+        : 'Windows: ПКМ по файлу → «Установить». macOS: добавьте в Font Book. Затем перезапустите Figma Desktop и повторите импорт. В браузере нужен FigmaAgent; на ChromeOS/Linux шрифт загружается в настройках аккаунта или организации.';
+
+      downloadAllFontsBtn.style.display = missingFonts.length > 1 ? 'inline-block' : 'none';
+      fontsCard.style.display = 'block';
+    }
+
+    function hideFonts() {
+      missingFonts = [];
+      fontsCard.style.display = 'none';
+      fontsList.innerHTML = '';
+      fontsDesc.textContent = '';
+      fontsInstructions.textContent = '';
+    }
+
+    downloadAllFontsBtn.addEventListener('click', downloadAllFonts);
 
     function setFormProcessing(busy) {
       isProcessing = busy;
@@ -820,6 +1072,7 @@
 
       hideAlert();
       hideWarnings();
+      hideFonts();
       setFormProcessing(true);
       showProgress('Анализ дерева...', 5);
 
@@ -843,6 +1096,7 @@
       updateCounters();
       hideAlert();
       hideWarnings();
+      hideFonts();
       setFormProcessing(true);
       showProgress('Авто-импорт с моста...', 5);
       parent.postMessage(
@@ -892,9 +1146,8 @@
         setFormProcessing(false);
         hideProgress();
         showAlert('Готово!', msg.message || 'Импорт успешно завершен!', 'success');
-        if ((msg.warnings && msg.warnings.length > 0) || (msg.fonts && msg.fonts.some((f) => f.sourceUrl))) {
-          showWarnings(msg.warnings, msg.fonts);
-        }
+        showWarnings(msg.warnings || []);
+        showMissingFonts(msg.missingFonts || []);
       } else if (msg.type === 'ERROR') {
         setFormProcessing(false);
         hideProgress();

@@ -6,7 +6,7 @@ import {
   countFIRNodes,
   safeLoadFont,
 } from './node-factory.ts';
-import { fontManager } from './font-manager.ts';
+import { fontManager, selectMissingFontAssets } from './font-manager.ts';
 
 figma.showUI(__html__, { width: 460, height: 620 });
 
@@ -109,13 +109,16 @@ figma.ui.onmessage = async (msg: PluginIncomingMessage) => {
       figma.viewport.scrollAndZoomIntoView([rootNode]);
 
       const warnings = fontManager.getWarnings();
+      const missingFonts = selectMissingFontAssets(data.fonts, (family) =>
+        fontManager.isFamilyAvailable(family)
+      );
 
       figma.ui.postMessage({
         type: 'SUCCESS',
         message: `Макет "${rootNode.name}" (${totalNodes} слоев) успешно импортирован на холст!`,
         totalNodes,
         warnings,
-        fonts: data.fonts || [],
+        missingFonts,
       });
     } catch (err) {
       console.error('[maxim4design] Rendering error:', err);

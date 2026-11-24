@@ -1,3 +1,5 @@
+import type { FIRFontAsset } from '../types/fir.ts';
+
 export const DEFAULT_FALLBACK_FONT: FontName = { family: 'Inter', style: 'Regular' };
 
 /**
@@ -115,6 +117,14 @@ export class FontManager {
     } catch (err) {
       console.warn('[FontManager] listAvailableFontsAsync failed:', err);
     }
+  }
+
+  /**
+   * Returns true when the family (case/quote-insensitive) exists in the editor's font index.
+   * Must be called after initAvailableFonts().
+   */
+  isFamilyAvailable(family: string): boolean {
+    return this.availableFontsMap.has(cleanFontFamily(family).toLowerCase());
   }
 
   private findBestStyleInFamily(
@@ -267,3 +277,27 @@ export class FontManager {
 }
 
 export const fontManager = new FontManager();
+
+/**
+ * Picks downloadable @font-face assets whose family is not available in the editor.
+ * Used by the plugin UI to offer a "Download missing fonts" flow (like html.to.design).
+ */
+export function selectMissingFontAssets(
+  fonts: FIRFontAsset[] | undefined,
+  isFamilyAvailable: (family: string) => boolean
+): FIRFontAsset[] {
+  const seen = new Set<string>();
+  const missing: FIRFontAsset[] = [];
+
+  for (const font of fonts || []) {
+    if (!font || !font.family || !font.sourceUrl) continue;
+    if (isFamilyAvailable(font.family)) continue;
+
+    const key = `${font.family.toLowerCase()}::${font.weight || '400'}::${font.style || 'normal'}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    missing.push(font);
+  }
+
+  return missing;
+}

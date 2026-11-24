@@ -4,6 +4,7 @@ import {
   FontManager,
   mapWeightToFigmaStyle,
   cleanFontFamily,
+  selectMissingFontAssets,
 } from '../src/plugin/font-manager.ts';
 
 function setupMockFigma(availableFonts: Set<string>) {
@@ -121,4 +122,37 @@ test('FontManager uses listAvailableFontsAsync for smart style matching within s
   assert.deepEqual(w550, { family: 'Manrope', style: 'SemiBold' });
 
   assert.equal(manager.getWarnings().length, 0);
+});
+
+test('isFamilyAvailable reports families indexed from listAvailableFontsAsync', async () => {
+  (globalThis as any).figma = {
+    listAvailableFontsAsync: async () => [
+      { fontName: { family: 'Manrope', style: 'Regular' } },
+      { fontName: { family: 'Oswald', style: 'Bold' } },
+    ],
+    loadFontAsync: async () => {},
+  };
+
+  const manager = new FontManager();
+  await manager.initAvailableFonts();
+
+  assert.equal(manager.isFamilyAvailable('Manrope'), true);
+  assert.equal(manager.isFamilyAvailable('"Oswald"'), true);
+  assert.equal(manager.isFamilyAvailable('ContactBebas'), false);
+});
+
+test('selectMissingFontAssets returns only missing families with downloadable sources', () => {
+  const fonts = [
+    { family: 'ContactBebas', weight: '800', sourceUrl: 'data:font/ttf;base64,AA', format: 'truetype' },
+    { family: 'ContactBebas', weight: '800', sourceUrl: 'data:font/ttf;base64,AA', format: 'truetype' },
+    { family: 'Manrope', weight: '400', sourceUrl: 'data:font/ttf;base64,BB', format: 'truetype' },
+    { family: 'ProcessMontserrat', weight: '700' },
+    { family: 'ProcessMontserrat', weight: '700', sourceUrl: 'data:font/ttf;base64,CC', format: 'truetype' },
+  ];
+
+  const missing = selectMissingFontAssets(fonts, (family) => family === 'Manrope');
+
+  assert.equal(missing.length, 2);
+  assert.deepEqual(missing.map((f) => f.family), ['ContactBebas', 'ProcessMontserrat']);
+  assert.ok(missing.every((f) => Boolean(f.sourceUrl)));
 });
