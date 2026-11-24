@@ -1,7 +1,7 @@
 ---
 id: TASK-021
 title: Исправление ширины контейнеров Auto Layout, центрирования кнопок и absolute-позиций
-status: pending
+status: done
 priority: high
 phase: 5
 dependencies: [TASK-007, TASK-015]
@@ -27,12 +27,12 @@ tags: [extractor, figma-plugin, layout, bugfix]
   - Проверить расчёт `childRelX` / `childRelY` для `position: absolute` детей внутри `FRAME` с `layoutMode === 'NONE'` и в Auto Layout родителях (`layoutPositioning = 'ABSOLUTE'`).
 
 ## 4. Критерии приемки (Definition of Done)
-- [ ] `header.site-header` занимает полную ширину `1353px` с корректным распределением логотипа, меню и телефона.
-- [ ] Текст в кнопках `Подробнее` и `ОБСУДИТЬ ОЗЕЛЕНЕНИЕ` отцентрован внутри пилюли.
-- [ ] `.hero-card` располагается слева внизу hero-секции (`x ≈ 8px`), совпадая с браузерным скриншотом.
+- [x] `header.site-header` занимает полную ширину `1353px` с корректным распределением логотипа, меню и телефона.
+- [x] Текст в кнопках `Подробнее` и `ОБСУДИТЬ ОЗЕЛЕНЕНИЕ` отцентрован внутри пилюли.
+- [x] `.hero-card` располагается слева внизу hero-секции (`x ≈ 8px`), совпадая с браузерным скриншотом.
 
 ## 5. Чек-лист реализации
-- [ ] Исправить `sizingHorizontal` / `FIXED` для `space-between` в `layout-analyzer.ts` / `layout-engine.ts`.
-- [ ] Исправить центрирование текста в стилизованных кнопках в `dom-extractor.ts`.
-- [ ] Проверить абсолютное позиционирование `.hero-card` и добавить тесты.
-- [ ] Переместить карточку в `/done`.
+- [x] Исправить `sizingHorizontal` / `FIXED` для `space-between` в `layout-analyzer.ts` / `layout-engine.ts`.
+- [x] Исправить центрирование текста в стилизованных кнопках в `dom-extractor.ts`.
+- [x] Проверить абсолютное позиционирование `.hero-card` и добавить тесты.
+- [x] Переместить карточку в `/done`.

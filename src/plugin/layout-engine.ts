@@ -30,6 +30,23 @@ export function applyAutoLayout(frame: FrameNode, layout?: FIRLayout): void {
     frame.paddingLeft = Math.max(0, layout.padding.left || 0);
   }
 
+  // Primary & Counter axis sizing modes (prevent Figma from defaulting to HUG on FIXED containers)
+  try {
+    if (layout.mode === 'HORIZONTAL') {
+      const isPrimaryHug =
+        layout.sizingHorizontal === 'HUG' && layout.primaryAlign !== 'SPACE_BETWEEN';
+      frame.primaryAxisSizingMode = isPrimaryHug ? 'AUTO' : 'FIXED';
+      frame.counterAxisSizingMode = layout.sizingVertical === 'HUG' ? 'AUTO' : 'FIXED';
+    } else if (layout.mode === 'VERTICAL') {
+      const isPrimaryHug =
+        layout.sizingVertical === 'HUG' && layout.primaryAlign !== 'SPACE_BETWEEN';
+      frame.primaryAxisSizingMode = isPrimaryHug ? 'AUTO' : 'FIXED';
+      frame.counterAxisSizingMode = layout.sizingHorizontal === 'HUG' ? 'AUTO' : 'FIXED';
+    }
+  } catch {
+    // Graceful fallback for mock environments
+  }
+
   // Primary axis alignment (justify-content)
   switch (layout.primaryAlign) {
     case 'CENTER':

@@ -389,6 +389,23 @@ function traverseElement(element: HTMLElement): FIRNode {
           textData,
         };
 
+        const buttonLayout: FIRLayout = layout
+          ? {
+              ...layout,
+              sizingHorizontal: 'FIXED',
+              sizingVertical: 'FIXED',
+            }
+          : {
+              mode: 'HORIZONTAL',
+              wrap: false,
+              itemSpacing: 0,
+              padding: { top: padTop, right: padRight, bottom: padBottom, left: padLeft },
+              primaryAlign: computed.textAlign === 'center' || tagName === 'BUTTON' ? 'CENTER' : 'MIN',
+              counterAlign: 'CENTER',
+              sizingHorizontal: 'FIXED',
+              sizingVertical: 'FIXED',
+            };
+
         return {
           id,
           name,
@@ -397,7 +414,7 @@ function traverseElement(element: HTMLElement): FIRNode {
           visible,
           opacity,
           clipsContent,
-          layout,
+          layout: buttonLayout,
           zIndex,
           style: Object.keys(style).length > 0 ? style : undefined,
           children: [textChild],

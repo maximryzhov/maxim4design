@@ -182,11 +182,13 @@ export async function renderFIRNode(
 
       frame.appendChild(childSceneNode);
 
-      if (childNode.layout && options?.useAutoLayout !== false) {
-        applyChildSizing(childSceneNode, {
-          horizontal: childNode.layout.sizingHorizontal,
-          vertical: childNode.layout.sizingVertical,
-        });
+      if (childNode.layout) {
+        if (node.layout && node.layout.mode !== 'NONE' && options?.useAutoLayout !== false) {
+          applyChildSizing(childSceneNode, {
+            horizontal: childNode.layout.sizingHorizontal,
+            vertical: childNode.layout.sizingVertical,
+          });
+        }
 
         const childRelX = childNode.bounds.x - node.bounds.x;
         const childRelY = childNode.bounds.y - node.bounds.y;

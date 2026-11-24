@@ -84,3 +84,28 @@ test('applyChildSizing applies FILL, HUG, FIXED sizing', () => {
   assert.equal(mockChild.layoutSizingHorizontal, 'FILL');
   assert.equal(mockChild.layoutSizingVertical, 'HUG');
 });
+
+test('applyAutoLayout sets primaryAxisSizingMode FIXED for SPACE_BETWEEN containers', () => {
+  const mockHeader: any = {
+    layoutMode: 'NONE',
+    primaryAxisSizingMode: 'AUTO',
+    counterAxisSizingMode: 'AUTO',
+  };
+
+  applyAutoLayout(mockHeader, {
+    mode: 'HORIZONTAL',
+    wrap: false,
+    itemSpacing: 20,
+    padding: { top: 0, right: 35, bottom: 0, left: 35 },
+    primaryAlign: 'SPACE_BETWEEN',
+    counterAlign: 'CENTER',
+    sizingHorizontal: 'HUG', // Even if HUG, SPACE_BETWEEN needs FIXED width
+    sizingVertical: 'FIXED',
+  });
+
+  assert.equal(mockHeader.layoutMode, 'HORIZONTAL');
+  assert.equal(mockHeader.primaryAxisSizingMode, 'FIXED');
+  assert.equal(mockHeader.counterAxisSizingMode, 'FIXED');
+  assert.equal(mockHeader.primaryAxisAlignItems, 'SPACE_BETWEEN');
+  assert.equal(mockHeader.counterAxisAlignItems, 'CENTER');
+});
