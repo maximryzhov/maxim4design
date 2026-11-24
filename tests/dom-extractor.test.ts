@@ -222,3 +222,70 @@ test('extractFIRFromElement extracts valid FIRNode tree', () => {
   assert.equal(validation.valid, true);
   assert.equal(validation.errors.length, 0);
 });
+
+test('extractFIRFromElement infers itemSpacing from child margins when flex gap is 0', () => {
+  const mockDOM = setupMockDOM();
+
+  const item1 = createMockElement({
+    tagName: 'span',
+    textContent: '01',
+    rect: { x: 0, y: 0, width: 30, height: 24 },
+  });
+  const item2 = createMockElement({
+    tagName: 'strong',
+    textContent: 'Рестораны и кафе',
+    rect: { x: 46, y: 0, width: 160, height: 24 }, // 16px margin-left/right gap
+  });
+
+  const row = createMockElement({
+    tagName: 'div',
+    className: 'audience-row',
+    rect: { x: 0, y: 0, width: 400, height: 40 },
+    children: [item1, item2],
+  });
+
+  mockDOM.setComputedStyle(row, {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: '0px',
+    visibility: 'visible',
+    opacity: '1',
+    overflow: 'visible',
+    zIndex: '0',
+    backgroundColor: 'rgba(0, 0, 0, 0)',
+    borderTopWidth: '0px',
+    borderRightWidth: '0px',
+    borderBottomWidth: '0px',
+    borderLeftWidth: '0px',
+    borderTopStyle: 'none',
+    borderRightStyle: 'none',
+    borderBottomStyle: 'none',
+    borderLeftStyle: 'none',
+    borderTopLeftRadius: '0px',
+    borderTopRightRadius: '0px',
+    borderBottomRightRadius: '0px',
+    borderBottomLeftRadius: '0px',
+  });
+  mockDOM.setComputedStyle(item1, {
+    display: 'block',
+    visibility: 'visible',
+    opacity: '1',
+    color: '#000',
+    fontSize: '14px',
+    fontFamily: 'Inter',
+    fontWeight: '400',
+  });
+  mockDOM.setComputedStyle(item2, {
+    display: 'block',
+    visibility: 'visible',
+    opacity: '1',
+    color: '#000',
+    fontSize: '16px',
+    fontFamily: 'Inter',
+    fontWeight: '700',
+  });
+
+  const fir = extractFIRFromElement(row as any);
+  assert.equal(fir.layout?.mode, 'HORIZONTAL');
+  assert.equal(fir.layout?.itemSpacing, 16);
+});

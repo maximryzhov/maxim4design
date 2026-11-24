@@ -493,6 +493,32 @@ function traverseElement(element: HTMLElement): FIRNode {
 
   const bgImageData = extractImageData(element);
 
+  // If flex container has gap: 0 and children are separated via CSS margins, infer itemSpacing
+  if (
+    layout &&
+    (layout.mode === 'HORIZONTAL' || layout.mode === 'VERTICAL') &&
+    layout.itemSpacing === 0 &&
+    layout.primaryAlign !== 'SPACE_BETWEEN' &&
+    children.length >= 2
+  ) {
+    const flowChildren = children.filter((c) => !c.layout?.isAbsolute);
+    const gaps: number[] = [];
+    for (let i = 0; i < flowChildren.length - 1; i++) {
+      const a = flowChildren[i].bounds;
+      const b = flowChildren[i + 1].bounds;
+      const gap =
+        layout.mode === 'HORIZONTAL'
+          ? b.x - (a.x + a.width)
+          : b.y - (a.y + a.height);
+      if (gap > 0.5 && gap < 500) {
+        gaps.push(Math.round(gap));
+      }
+    }
+    if (gaps.length > 0) {
+      layout.itemSpacing = Math.min(...gaps);
+    }
+  }
+
   return {
     id,
     name,
