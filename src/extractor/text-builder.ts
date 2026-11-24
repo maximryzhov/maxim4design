@@ -125,12 +125,15 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
         textDecoration = 'STRIKETHROUGH';
       }
 
+      const fontStyle: 'normal' | 'italic' = computed.fontStyle === 'italic' ? 'italic' : 'normal';
+
       const segment: TextSegment = {
         start,
         end,
         fontFamily: computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
         fontWeight,
         fontSize,
+        fontStyle,
         color: textColor,
         lineHeightPx: !isNaN(lineHeightVal) ? lineHeightVal : undefined,
         letterSpacingPx: !isNaN(letterSpacingVal) ? letterSpacingVal : undefined,

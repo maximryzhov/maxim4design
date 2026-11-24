@@ -45,9 +45,18 @@ export function cleanFontFamily(rawFamily: string): string {
 
 export class FontManager {
   private loadedFonts = new Set<string>();
+  private warnings: string[] = [];
 
   private getFontKey(font: FontName): string {
     return `${font.family}::${font.style}`;
+  }
+
+  getWarnings(): string[] {
+    return [...this.warnings];
+  }
+
+  clearWarnings(): void {
+    this.warnings = [];
   }
 
   /**
@@ -79,12 +88,14 @@ export class FontManager {
     // 2. Try Inter with same style
     const interSameStyle: FontName = { family: 'Inter', style };
     if (this.isLoaded(interSameStyle)) {
+      this.recordWarning(`Шрифт "${requestedFont.family} (${requestedFont.style})" заменен на "Inter (${interSameStyle.style})"`);
       return interSameStyle;
     }
 
     try {
       await figma.loadFontAsync(interSameStyle);
       this.markLoaded(interSameStyle);
+      this.recordWarning(`Шрифт "${requestedFont.family} (${requestedFont.style})" заменен на "Inter (${interSameStyle.style})"`);
       return interSameStyle;
     } catch {
       console.warn(
@@ -102,7 +113,14 @@ export class FontManager {
       }
     }
 
+    this.recordWarning(`Шрифт "${requestedFont.family} (${requestedFont.style})" заменен на "Inter (Regular)"`);
     return DEFAULT_FALLBACK_FONT;
+  }
+
+  private recordWarning(msg: string): void {
+    if (!this.warnings.includes(msg)) {
+      this.warnings.push(msg);
+    }
   }
 
   /**
@@ -124,6 +142,7 @@ export class FontManager {
 
   clearCache(): void {
     this.loadedFonts.clear();
+    this.warnings = [];
   }
 }
 

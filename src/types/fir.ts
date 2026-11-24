@@ -83,6 +83,7 @@ export interface TextSegment {
   fontFamily: string;
   fontWeight: number;
   fontSize: number;
+  fontStyle?: 'normal' | 'italic';
   lineHeightPx?: number;
   letterSpacingPx?: number;
   color: RGBAColor;

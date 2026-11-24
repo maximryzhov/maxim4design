@@ -1,12 +1,22 @@
 // Figma plugin entry point (runs in isolated Figma sandbox)
-import { isFIRNode, validateFIRTree, type FIRNode } from '../types/fir.ts';
-import { renderFIRNode, safeLoadFont } from './node-factory.ts';
+import { validateFIRTree, type FIRNode } from '../types/fir.ts';
+import {
+  renderFIRTreeAsync,
+  collectFontsFromTree,
+  countFIRNodes,
+  safeLoadFont,
+} from './node-factory.ts';
+import { fontManager } from './font-manager.ts';
 
-figma.showUI(__html__, { width: 440, height: 580 });
+figma.showUI(__html__, { width: 460, height: 620 });
 
 interface PluginIncomingMessage {
   type: string;
   payload?: unknown;
+  options?: {
+    useAutoLayout?: boolean;
+    includeHidden?: boolean;
+  };
 }
 
 figma.ui.onmessage = async (msg: PluginIncomingMessage) => {
@@ -14,6 +24,10 @@ figma.ui.onmessage = async (msg: PluginIncomingMessage) => {
 
   if (msg.type === 'IMPORT_FIR') {
     const data = msg.payload as FIRNode;
+    const options = {
+      useAutoLayout: msg.options?.useAutoLayout ?? true,
+      includeHidden: msg.options?.includeHidden ?? false,
+    };
 
     if (!data) {
       figma.ui.postMessage({
@@ -22,6 +36,14 @@ figma.ui.onmessage = async (msg: PluginIncomingMessage) => {
       });
       return;
     }
+
+    // Step 1: Validate tree structure
+    figma.ui.postMessage({
+      type: 'PROGRESS',
+      phase: 'validation',
+      percent: 5,
+      message: 'Валидация структуры FIR...',
+    });
 
     const validation = validateFIRTree(data);
     if (!validation.valid) {
@@ -33,27 +55,65 @@ figma.ui.onmessage = async (msg: PluginIncomingMessage) => {
       return;
     }
 
-    figma.ui.postMessage({
-      type: 'STATUS',
-      message: 'Загрузка шрифтов и генерация слоев...',
-      status: 'info',
-    });
+    const totalNodes = countFIRNodes(data, options.includeHidden);
+    fontManager.clearWarnings();
 
     try {
-      // Preload baseline fonts
+      // Step 2: Preload detected fonts
+      figma.ui.postMessage({
+        type: 'PROGRESS',
+        phase: 'fonts',
+        percent: 15,
+        message: 'Анализ дерева и загрузка шрифтов...',
+        current: 0,
+        total: totalNodes,
+      });
+
+      const requiredFonts = collectFontsFromTree(data);
+      if (requiredFonts.length > 0) {
+        await fontManager.preloadFonts(requiredFonts);
+      }
       await safeLoadFont('Inter', 'Regular');
       await safeLoadFont('Inter', 'Bold');
 
-      // Render root node and all children
-      const rootNode = await renderFIRNode(data);
+      // Step 3: Chunked async rendering
+      figma.ui.postMessage({
+        type: 'PROGRESS',
+        phase: 'rendering',
+        percent: 25,
+        message: `Генерация слоев (0/${totalNodes})...`,
+        current: 0,
+        total: totalNodes,
+      });
+
+      const rootNode = await renderFIRTreeAsync(data, {
+        useAutoLayout: options.useAutoLayout,
+        includeHidden: options.includeHidden,
+        chunkSize: 50,
+        onProgress: (current, total, nodeName) => {
+          const percent = Math.min(95, Math.round(25 + (current / Math.max(1, total)) * 70));
+          figma.ui.postMessage({
+            type: 'PROGRESS',
+            phase: 'rendering',
+            percent,
+            current,
+            total,
+            message: `Генерация слоев (${current}/${total}): ${nodeName || 'элемент'}`,
+          });
+        },
+      });
 
       figma.currentPage.appendChild(rootNode);
       figma.currentPage.selection = [rootNode];
       figma.viewport.scrollAndZoomIntoView([rootNode]);
 
+      const warnings = fontManager.getWarnings();
+
       figma.ui.postMessage({
         type: 'SUCCESS',
-        message: `Элемент "${rootNode.name}" успешно импортирован на холст!`,
+        message: `Макет "${rootNode.name}" (${totalNodes} слоев) успешно импортирован на холст!`,
+        totalNodes,
+        warnings,
       });
     } catch (err) {
       console.error('[maxim4design] Rendering error:', err);

@@ -34,10 +34,13 @@ export async function renderTextNode(
 
   // Base font: from first segment or default Inter
   const firstSeg = segments[0];
+  const isBaseItalic =
+    firstSeg?.fontStyle === 'italic' ||
+    (firstSeg?.fontFamily ? firstSeg.fontFamily.toLowerCase().includes('italic') : false);
   const baseFont = await fontManager.loadFontSafely(
     firstSeg?.fontFamily || 'Inter',
     firstSeg?.fontWeight ?? 400,
-    firstSeg?.fontFamily.toLowerCase().includes('italic') || false
+    isBaseItalic
   );
 
   textNode.fontName = baseFont;
@@ -70,7 +73,9 @@ export async function renderTextNode(
 
     if (start >= end) continue;
 
-    const isItalic = seg.fontFamily.toLowerCase().includes('italic');
+    const isItalic =
+      seg.fontStyle === 'italic' ||
+      (seg.fontFamily ? seg.fontFamily.toLowerCase().includes('italic') : false);
     const segFont = await fontManager.loadFontSafely(
       seg.fontFamily || 'Inter',
       seg.fontWeight ?? 400,
