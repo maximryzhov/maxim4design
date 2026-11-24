@@ -507,6 +507,17 @@
           <span class="slider"></span>
         </label>
       </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="toggle-title">Авто-приём (localhost:8765)</span>
+          <span class="toggle-desc">Автоимпорт FIR из расширения без ручной вставки</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="bridgeSyncToggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
     </div>
 
     <!-- Progress Indicator -->
@@ -641,6 +652,7 @@
 
     const autoLayoutToggle = document.getElementById('autoLayoutToggle');
     const hiddenNodesToggle = document.getElementById('hiddenNodesToggle');
+    const bridgeSyncToggle = document.getElementById('bridgeSyncToggle');
 
     const progressSection = document.getElementById('progressSection');
     const progressMessage = document.getElementById('progressMessage');
@@ -804,6 +816,47 @@
         '*'
       );
     }
+
+    function startImportWithPayload(payload) {
+      jsonInput.value = JSON.stringify(payload);
+      updateCounters();
+      hideAlert();
+      hideWarnings();
+      setFormProcessing(true);
+      showProgress('Авто-импорт с моста...', 5);
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: 'IMPORT_FIR',
+            payload: payload,
+            options: {
+              useAutoLayout: autoLayoutToggle.checked,
+              includeHidden: hiddenNodesToggle.checked
+            }
+          }
+        },
+        '*'
+      );
+    }
+
+    async function pollLocalBridge() {
+      if (bridgeSyncToggle && bridgeSyncToggle.checked && !isProcessing) {
+        try {
+          const resp = await fetch('http://localhost:8765/fir/next', { cache: 'no-store' });
+          if (resp.status === 200) {
+            const payload = await resp.json();
+            if (payload && payload.type && payload.bounds) {
+              startImportWithPayload(payload);
+            }
+          }
+        } catch {
+          // Bridge not running — silent ignore
+        }
+      }
+      setTimeout(pollLocalBridge, 800);
+    }
+
+    pollLocalBridge();
 
     importBtn.addEventListener('click', startImport);
     retryBtn.addEventListener('click', startImport);

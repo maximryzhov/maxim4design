@@ -260,13 +260,41 @@ export function extractFIRFromElement(rootElement: HTMLElement): FIRNode {
 }
 
 /**
- * Async DOM extractor that also resolves external HTTP(S) image URLs and compresses
- * oversized data URIs into Figma-compatible PNG/JPEG base64 strings.
+ * Scrolls the page in viewport increments to trigger IntersectionObserver scroll-reveal
+ * animations before extracting the DOM, then restores the original scroll position.
+ */
+export async function warmupScrollReveal(stepDelayMs = 80): Promise<void> {
+  if (typeof window === 'undefined' || typeof window.scrollTo !== 'function' || typeof document === 'undefined') {
+    return;
+  }
+  const origX = window.scrollX || 0;
+  const origY = window.scrollY || 0;
+  const docHeight = Math.max(
+    document.body?.scrollHeight || 0,
+    document.documentElement?.scrollHeight || 0
+  );
+  const step = Math.max(300, window.innerHeight || 800);
+
+  for (let y = 0; y <= docHeight; y += step) {
+    window.scrollTo(0, y);
+    await new Promise((r) => setTimeout(r, stepDelayMs));
+  }
+  window.scrollTo(origX, origY);
+  await new Promise((r) => setTimeout(r, stepDelayMs));
+}
+
+/**
+ * Async DOM extractor that optionally warms up scroll animations, resolves external HTTP(S)
+ * image URLs, and compresses oversized data URIs into Figma-compatible PNG/JPEG base64 strings.
  */
 export async function extractFIRFromElementAsync(
   rootElement: HTMLElement,
-  maxImageDimension = 2048
+  maxImageDimension = 2048,
+  options?: { warmupScroll?: boolean }
 ): Promise<FIRNode> {
+  if (options?.warmupScroll) {
+    await warmupScrollReveal();
+  }
   const tree = extractFIRFromElement(rootElement);
   return resolveTreeImagesAsync(tree, maxImageDimension);
 }

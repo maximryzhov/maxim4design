@@ -332,4 +332,8 @@ test('Plugin UI HTML contains necessary components and handlers', () => {
   // Warnings and retry
   assert.ok(html.includes('id="warningsCard"'), 'Must have warningsCard');
   assert.ok(html.includes('id="retryBtn"'), 'Must have retryBtn');
+
+  // Auto-sync bridge toggle
+  assert.ok(html.includes('id="bridgeSyncToggle"'), 'Must have bridgeSyncToggle');
+  assert.ok(html.includes('http://localhost:8765/fir/next'), 'Must poll local bridge');
 });

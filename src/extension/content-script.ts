@@ -33,6 +33,23 @@ function showToast(message: string, isError = false) {
   }, 2500);
 }
 
+async function trySendToLocalBridge(data: unknown): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1200);
+    const resp = await fetch('http://localhost:8765/fir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    return resp.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function copyToClipboard(data: unknown): Promise<void> {
   const jsonStr = JSON.stringify(data, null, 2);
   try {
@@ -81,9 +98,13 @@ function startElementInspector() {
 
     try {
       const fir = await extractFIRFromElementAsync(target);
-      copyToClipboard(fir).then(() => {
+      const sentViaBridge = await trySendToLocalBridge(fir);
+      if (sentViaBridge) {
+        showToast(`Элемент <${target.tagName.toLowerCase()}> отправлен напрямую в Figma!`);
+      } else {
+        await copyToClipboard(fir);
         showToast(`Элемент <${target.tagName.toLowerCase()}> скопирован в буфер! Вставьте в Figma.`);
-      });
+      }
     } catch (err: any) {
       showToast('Ошибка экстракции элемента: ' + err?.message, true);
     }
@@ -119,10 +140,16 @@ if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
       (async () => {
         try {
           const root = document.body || document.documentElement;
-          const fir = await extractFIRFromElementAsync(root);
-          await copyToClipboard(fir);
-          showToast('Вся страница скопирована в буфер! Вставьте в плагин Figma.');
-          sendResponse({ success: true, message: 'Страница скопирована!' });
+          const fir = await extractFIRFromElementAsync(root, 2048, { warmupScroll: true });
+          const sentViaBridge = await trySendToLocalBridge(fir);
+          if (sentViaBridge) {
+            showToast('Страница отправлена напрямую в Figma!');
+            sendResponse({ success: true, message: 'Отправлено в Figma через локальный мост!' });
+          } else {
+            await copyToClipboard(fir);
+            showToast('Вся страница скопирована в буфер! Вставьте в плагин Figma.');
+            sendResponse({ success: true, message: 'Страница скопирована!' });
+          }
         } catch (err: any) {
           showToast('Ошибка экстракции: ' + err?.message, true);
           sendResponse({ success: false, message: err?.message });
