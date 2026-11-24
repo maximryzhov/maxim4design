@@ -2,6 +2,7 @@ import type { FIRNode, FIRBounds, RGBAColor } from '../types/fir.ts';
 import { fontManager } from './font-manager.ts';
 import { applyAutoLayout, applyChildSizing } from './layout-engine.ts';
 import { renderTextNode } from './text-renderer.ts';
+import { renderVectorNode } from './vector-renderer.ts';
 import { applyStyles } from './style-applier.ts';
 
 /**
@@ -40,6 +41,10 @@ export async function renderFIRNode(
 
   if (node.type === 'TEXT') {
     return renderTextNode(node, parentFrame, parentBounds);
+  }
+
+  if (node.type === 'VECTOR') {
+    return renderVectorNode(node, parentFrame, parentBounds);
   }
 
   if (node.type === 'RECTANGLE') {
