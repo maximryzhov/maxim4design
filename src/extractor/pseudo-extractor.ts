@@ -28,14 +28,45 @@ export function extractPseudoElement(
     rawContent === '""' ||
     rawContent === "''";
 
-  const w = parseFloat(computed.width) || 0;
-  const h = parseFloat(computed.height) || 0;
-  const style = extractElementStyles(computed);
-  const hasVisualDecoration =
-    (w > 0 && h > 0) &&
-    (Boolean(style.backgroundColor) || Boolean(style.borders) || Boolean(style.shadows));
+  const top = parseFloat(computed.top);
+  const left = parseFloat(computed.left);
+  const right = parseFloat(computed.right);
+  const bottom = parseFloat(computed.bottom);
 
-  if (isNoneContent && !hasVisualDecoration) {
+  let w = parseFloat(computed.width) || 0;
+  let h = parseFloat(computed.height) || 0;
+  const hasExplicitBox =
+    w > 0 ||
+    h > 0 ||
+    !isNaN(left) ||
+    !isNaN(right) ||
+    !isNaN(top) ||
+    !isNaN(bottom);
+  // `inset:0` / `inset:auto 0 0` leaves width/height as `auto`; derive them from
+  // the containing block so gradient-only overlays are not dropped as 0x0.
+  if (w <= 0 && !isNaN(left) && !isNaN(right)) {
+    w = Math.max(0, parentBounds.width - left - right);
+  }
+  if (h <= 0 && !isNaN(top) && !isNaN(bottom)) {
+    h = Math.max(0, parentBounds.height - top - bottom);
+  }
+  if (w <= 0) w = parentBounds.width;
+  if (h <= 0) h = parentBounds.height;
+
+  const style = extractElementStyles(computed);
+  const hasVisualPaint =
+    Boolean(style.backgroundColor && style.backgroundColor.a > 0) ||
+    Boolean(style.backgroundGradient) ||
+    Boolean(
+      style.borders &&
+        (style.borders.top.width > 0 ||
+          style.borders.right.width > 0 ||
+          style.borders.bottom.width > 0 ||
+          style.borders.left.width > 0)
+    ) ||
+    Boolean(style.shadows && style.shadows.length > 0);
+
+  if (isNoneContent && (!hasVisualPaint || !hasExplicitBox)) {
     return undefined;
   }
 
@@ -48,15 +79,10 @@ export function extractPseudoElement(
   // Calculate pseudo element bounds
   let posX = parentBounds.x;
   let posY = parentBounds.y;
-  let width = w > 0 ? w : parentBounds.width;
-  let height = h > 0 ? h : parentBounds.height;
+  let width = w;
+  let height = h;
 
   if (computed.position === 'absolute') {
-    const top = parseFloat(computed.top);
-    const left = parseFloat(computed.left);
-    const right = parseFloat(computed.right);
-    const bottom = parseFloat(computed.bottom);
-
     if (!isNaN(left)) {
       posX = parentBounds.x + left;
     } else if (!isNaN(right)) {

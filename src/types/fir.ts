@@ -67,8 +67,22 @@ export interface ShadowEffect {
   visible?: boolean;
 }
 
+export interface FIRGradientStop {
+  /** 0..1 along the gradient line. */
+  position: number;
+  color: RGBAColor;
+}
+
+export interface FIRGradient {
+  type: 'LINEAR' | 'RADIAL';
+  /** CSS angle in degrees (0 = to top, 90 = to right, 180 = to bottom). */
+  angle: number;
+  stops: FIRGradientStop[];
+}
+
 export interface FIRStyle {
   backgroundColor?: RGBAColor;
+  backgroundGradient?: FIRGradient;
   borderRadius?: FIRBorderRadius;
   borders?: FIRBorders;
   shadows?: ShadowEffect[];
