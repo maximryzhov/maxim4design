@@ -406,12 +406,33 @@ function parseTransformMatrix(computed: CSSStyleDeclaration): FIRTransform | und
     rotation = 180;
   }
 
-  return {
+  const transform: FIRTransform = {
     scaleX: a,
     scaleY: d,
     rotation,
     translateX: e,
     translateY: f,
+  };
+
+  // getBoundingClientRect() is the axis-aligned box of the already-rotated
+  // element. Keep the CSS layout box so the renderer can undo that inflation
+  // (e.g. a 37x37 FAQ "+" becomes 52.33x52.33 at 45 degrees).
+  const baseWidth = parseFloat(computed.width);
+  const baseHeight = parseFloat(computed.height);
+  if (Number.isFinite(baseWidth) && baseWidth > 0) transform.baseWidth = baseWidth;
+  if (Number.isFinite(baseHeight) && baseHeight > 0) transform.baseHeight = baseHeight;
+
+  return transform;
+}
+
+/** Undoes the bounding-box inflation caused by a CSS rotation. */
+function getUnrotatedBounds(bounds: FIRBounds, transform?: FIRTransform): FIRBounds {
+  if (!transform?.baseWidth || !transform?.baseHeight) return bounds;
+  return {
+    x: bounds.x + (bounds.width - transform.baseWidth) / 2,
+    y: bounds.y + (bounds.height - transform.baseHeight) / 2,
+    width: transform.baseWidth,
+    height: transform.baseHeight,
   };
 }
 
@@ -688,20 +709,21 @@ function traverseElement(element: HTMLElement): FIRNode {
       );
 
       if (hasBoxStyling) {
+        const layoutBounds = getUnrotatedBounds(bounds, transform);
         const padTop = parseFloat(computed.paddingTop) || 0;
         const padRight = parseFloat(computed.paddingRight) || 0;
         const padBottom = parseFloat(computed.paddingBottom) || 0;
         const padLeft = parseFloat(computed.paddingLeft) || 0;
-        const innerWidth = Math.max(1, bounds.width - padLeft - padRight);
-        const innerHeight = Math.max(1, bounds.height - padTop - padBottom);
+        const innerWidth = Math.max(1, layoutBounds.width - padLeft - padRight);
+        const innerHeight = Math.max(1, layoutBounds.height - padTop - padBottom);
 
         const textChild: FIRNode = {
           id: `${id}-text`,
           name: `${name}-text`,
           type: 'TEXT',
           bounds: {
-            x: bounds.x + padLeft,
-            y: bounds.y + padTop,
+            x: layoutBounds.x + padLeft,
+            y: layoutBounds.y + padTop,
             width: innerWidth,
             height: innerHeight,
           },
@@ -740,6 +762,7 @@ function traverseElement(element: HTMLElement): FIRNode {
           layout: buttonLayout,
           zIndex,
           style: Object.keys(style).length > 0 ? style : undefined,
+          transform,
           children: [textChild],
         };
       }
@@ -756,6 +779,7 @@ function traverseElement(element: HTMLElement): FIRNode {
         zIndex,
         style: Object.keys(style).length > 0 ? style : undefined,
         textData,
+        transform,
       };
     }
   }

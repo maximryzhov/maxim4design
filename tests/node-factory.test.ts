@@ -160,3 +160,64 @@ test('renderFIRNode creates native nodes with correct relative coordinates and f
   assert.equal(child.fontSize, 20);
   assert.equal(child.fills[0].color.r, 1);
 });
+
+test('renderFIRNode applies rotation and removes bounding-box inflation', async () => {
+  setupFigmaMock();
+
+  const badge: FIRNode = {
+    id: 'faq-plus',
+    name: 'span.faq-plus',
+    type: 'FRAME',
+    // 37x37 layout box rotated by 45deg => 52.33x52.33 bounding box.
+    bounds: { x: 1334.34, y: 1887.84, width: 52.33, height: 52.33 },
+    visible: true,
+    opacity: 1,
+    clipsContent: false,
+    zIndex: 0,
+    transform: {
+      scaleX: 0.707107,
+      scaleY: 0.707107,
+      rotation: 45,
+      translateX: 0,
+      translateY: 0,
+      baseWidth: 37,
+      baseHeight: 37,
+    },
+    children: [
+      {
+        id: 'faq-plus-text',
+        name: 'span.faq-plus-text',
+        type: 'TEXT',
+        bounds: { x: 1342.005, y: 1895.505, width: 37, height: 37 },
+        visible: true,
+        opacity: 1,
+        clipsContent: false,
+        zIndex: 0,
+        textData: {
+          characters: '+',
+          segments: [
+            {
+              start: 0,
+              end: 1,
+              fontFamily: 'Inter',
+              fontWeight: 400,
+              fontSize: 25,
+              color: { r: 1, g: 1, b: 1, a: 1 },
+            },
+          ],
+        },
+      },
+    ],
+  };
+
+  const node = (await renderFIRNode(badge)) as any;
+  assert.equal(node.width, 37);
+  assert.equal(node.height, 37);
+  assert.ok(Math.abs(node.x - 1342.005) < 0.001);
+  assert.ok(Math.abs(node.y - 1895.505) < 0.001);
+  assert.equal(node.rotation, -45);
+  assert.ok(Math.abs(node.children[0].x) < 0.001);
+  assert.ok(Math.abs(node.children[0].y) < 0.001);
+  assert.equal(node.children[0].width, 37);
+  assert.equal(node.children[0].height, 37);
+});

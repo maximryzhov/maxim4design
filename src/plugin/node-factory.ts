@@ -1,4 +1,5 @@
-import type { FIRNode, FIRBounds, RGBAColor } from '../types/fir.ts';
+import type { FIRNode, FIRBounds, RGBAColor, FIRTransform } from '../types/fir.ts';
+import { getNodeRenderBounds } from '../types/fir.ts';
 import { fontManager } from './font-manager.ts';
 import { applyAutoLayout, applyChildSizing, applyChildPositioning } from './layout-engine.ts';
 import { renderTextNode } from './text-renderer.ts';
@@ -89,6 +90,16 @@ function toFigmaColor(color: RGBAColor): { color: RGB; opacity: number } {
   };
 }
 
+/** Applies CSS rotation to a Figma node. CSS is clockwise, Figma is counter-clockwise. */
+function applyNodeRotation(node: SceneNode, transform?: FIRTransform): void {
+  if (!transform || Math.abs(transform.rotation) < 0.01) return;
+  try {
+    (node as unknown as { rotation: number }).rotation = -transform.rotation;
+  } catch {
+    // Rotation is unsupported for a few node types/older APIs; keep position.
+  }
+}
+
 /**
  * Renders a single FIRNode and its children into native Figma canvas nodes.
  */
@@ -117,10 +128,11 @@ export async function renderFIRNode(
     }
   }
 
-  const relX = parentBounds ? node.bounds.x - parentBounds.x : node.bounds.x;
-  const relY = parentBounds ? node.bounds.y - parentBounds.y : node.bounds.y;
-  const width = Math.max(1, node.bounds.width);
-  const height = Math.max(1, node.bounds.height);
+  const renderBounds = getNodeRenderBounds(node);
+  const relX = parentBounds ? renderBounds.x - parentBounds.x : renderBounds.x;
+  const relY = parentBounds ? renderBounds.y - parentBounds.y : renderBounds.y;
+  const width = Math.max(1, renderBounds.width);
+  const height = Math.max(1, renderBounds.height);
 
   if (node.type === 'TEXT') {
     return renderTextNode(node, parentFrame, parentBounds);
@@ -144,6 +156,7 @@ export async function renderFIRNode(
     rect.visible = node.visible;
 
     applyStyles(rect, node.style, node.clipsContent);
+    applyNodeRotation(rect, node.transform);
     return rect;
   }
 
@@ -158,6 +171,7 @@ export async function renderFIRNode(
 
   // Apply visual styles (fills, corner radius, borders, clipsContent)
   applyStyles(frame, node.style, node.clipsContent);
+  applyNodeRotation(frame, node.transform);
 
   // Background image fill if present
   if (node.imageData) {
@@ -177,13 +191,14 @@ export async function renderFIRNode(
   if (node.children && node.children.length > 0) {
     const sortedChildren = sortChildrenByStackingOrder(node.children);
     for (const childNode of sortedChildren) {
-      const childSceneNode = await renderFIRNode(childNode, frame, node.bounds, options, context);
+      const childSceneNode = await renderFIRNode(childNode, frame, renderBounds, options, context);
       if (!childSceneNode) continue;
 
       frame.appendChild(childSceneNode);
 
-      const childRelX = childNode.bounds.x - node.bounds.x;
-      const childRelY = childNode.bounds.y - node.bounds.y;
+      const childRenderBounds = getNodeRenderBounds(childNode);
+      const childRelX = childRenderBounds.x - renderBounds.x;
+      const childRelY = childRenderBounds.y - renderBounds.y;
 
       if (childNode.layout) {
         if (node.layout && node.layout.mode !== 'NONE' && options?.useAutoLayout !== false) {

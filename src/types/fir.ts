@@ -123,6 +123,33 @@ export interface FIRTransform {
   rotation: number;
   translateX: number;
   translateY: number;
+  /** Unrotated layout box width (CSS `width`), used to undo the bounding-box inflation. */
+  baseWidth?: number;
+  /** Unrotated layout box height (CSS `height`). */
+  baseHeight?: number;
+}
+
+/**
+ * Returns the box the node should be rendered at. `bounds` is the axis-aligned
+ * bounding box of the already-transformed element; for a rotated frame/text it is
+ * larger than the CSS layout box. The extra size is removed and the box is centered
+ * on the original bounding box, so `node.rotation` matches CSS `transform-origin: 50%`.
+ */
+export function getNodeRenderBounds(node: FIRNode): FIRBounds {
+  const transform = node.transform;
+  if (
+    !transform?.baseWidth ||
+    !transform?.baseHeight ||
+    Math.abs(transform.rotation) < 0.01
+  ) {
+    return node.bounds;
+  }
+  return {
+    x: node.bounds.x + (node.bounds.width - transform.baseWidth) / 2,
+    y: node.bounds.y + (node.bounds.height - transform.baseHeight) / 2,
+    width: transform.baseWidth,
+    height: transform.baseHeight,
+  };
 }
 
 export interface FIRNode {

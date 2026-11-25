@@ -1,4 +1,5 @@
 import type { FIRNode, FIRBounds, RGBAColor, TextSegment } from '../types/fir.ts';
+import { getNodeRenderBounds } from '../types/fir.ts';
 import { fontManager } from './font-manager.ts';
 
 function toFigmaColor(color: RGBAColor): { color: RGB; opacity: number } {
@@ -88,10 +89,11 @@ export async function renderTextNode(
   parentFrame?: FrameNode,
   parentBounds?: FIRBounds
 ): Promise<TextNode> {
-  const relX = parentBounds ? node.bounds.x - parentBounds.x : node.bounds.x;
-  const relY = parentBounds ? node.bounds.y - parentBounds.y : node.bounds.y;
-  const width = Math.max(1, node.bounds.width);
-  const height = Math.max(1, node.bounds.height);
+  const renderBounds = getNodeRenderBounds(node);
+  const relX = parentBounds ? renderBounds.x - parentBounds.x : renderBounds.x;
+  const relY = parentBounds ? renderBounds.y - parentBounds.y : renderBounds.y;
+  const width = Math.max(1, renderBounds.width);
+  const height = Math.max(1, renderBounds.height);
 
   const textNode = figma.createText();
   textNode.name = node.name || 'Text';
@@ -284,6 +286,15 @@ export async function renderTextNode(
     if (textNode.height > height * 1.12) {
       applyFontScale(textNode, segments, Math.max(0.7, (height * 1.12) / textNode.height));
       textNode.textAutoResize = 'HEIGHT';
+    }
+  }
+
+  if (node.transform && Math.abs(node.transform.rotation) > 0.01) {
+    try {
+      // CSS rotation is clockwise; Figma's `rotation` is counter-clockwise.
+      (textNode as unknown as { rotation: number }).rotation = -node.transform.rotation;
+    } catch {
+      // Keep upright text if the API rejects rotation.
     }
   }
 
