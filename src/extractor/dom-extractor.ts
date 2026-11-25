@@ -288,6 +288,33 @@ export function extractFIRFromElement(rootElement: HTMLElement): FIRNode {
 }
 
 /**
+ * Disables CSS transitions/animations for the duration of extraction. Scroll-reveal
+ * libraries animate opacity from 0 to 1; reading styles mid-transition bakes 0.27–0.99
+ * into FIR and makes cards semi-transparent in Figma. With transitions off, adding
+ * the final `.is-visible` class snaps the element to its target opacity immediately.
+ *
+ * Returns a cleanup function that removes the injected style.
+ */
+export function disableTransitionsForExtraction(): () => void {
+  if (
+    typeof document === 'undefined' ||
+    !document.head ||
+    typeof document.createElement !== 'function'
+  ) {
+    return () => undefined;
+  }
+  const style = document.createElement('style');
+  style.setAttribute('data-maxim4design-extraction', 'transitions-off');
+  style.textContent =
+    '*,*::before,*::after{transition:none!important;animation:none!important;' +
+    'scroll-behavior:auto!important}';
+  document.head.appendChild(style);
+  return () => {
+    if (style.parentNode) style.parentNode.removeChild(style);
+  };
+}
+
+/**
  * Scrolls the page in viewport increments to trigger IntersectionObserver scroll-reveal
  * animations before extracting the DOM, then restores the original scroll position.
  */
@@ -320,11 +347,18 @@ export async function extractFIRFromElementAsync(
   maxImageDimension = 2048,
   options?: { warmupScroll?: boolean; fetchExternalImage?: ExternalImageFetcher }
 ): Promise<FIRNode> {
-  if (options?.warmupScroll) {
-    await warmupScrollReveal();
+  const restoreAnimations = options?.warmupScroll
+    ? disableTransitionsForExtraction()
+    : undefined;
+  try {
+    if (options?.warmupScroll) {
+      await warmupScrollReveal();
+    }
+    const tree = extractFIRFromElement(rootElement);
+    return await resolveTreeImagesAsync(tree, maxImageDimension, options?.fetchExternalImage);
+  } finally {
+    restoreAnimations?.();
   }
-  const tree = extractFIRFromElement(rootElement);
-  return resolveTreeImagesAsync(tree, maxImageDimension, options?.fetchExternalImage);
 }
 
 function getTextNodeBounds(node: Node): FIRBounds | undefined {

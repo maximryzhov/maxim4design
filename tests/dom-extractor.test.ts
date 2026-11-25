@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCssColor, extractFIRFromElement } from '../src/extractor/dom-extractor.ts';
+import { parseCssColor, extractFIRFromElement, disableTransitionsForExtraction } from '../src/extractor/dom-extractor.ts';
 import { isFIRNode, validateFIRTree } from '../src/types/fir.ts';
 
 test('parseCssColor handles various CSS color formats', () => {
@@ -360,5 +360,44 @@ test('extractFIRFromElement keeps answer content of an open details element', ()
   const serialized = JSON.stringify(fir);
   assert.ok(serialized.includes('Вопрос'));
   assert.ok(serialized.includes('Ответ'));
+});
+
+test('disableTransitionsForExtraction injects and removes a transition-disable style', () => {
+  const origDocument = (globalThis as any).document;
+  const children: any[] = [];
+  const style: any = {
+    attributes: {} as Record<string, string>,
+    textContent: '',
+    parentNode: null as any,
+    setAttribute(name: string, value: string) {
+      this.attributes[name] = value;
+    },
+    remove() {
+      const index = children.indexOf(this);
+      if (index >= 0) children.splice(index, 1);
+    },
+  };
+  const head = {
+    appendChild(node: any) {
+      children.push(node);
+      style.parentNode = { removeChild: () => style.remove() };
+      return node;
+    },
+  };
+  (globalThis as any).document = {
+    head,
+    createElement: () => style,
+  };
+
+  try {
+    const restore = disableTransitionsForExtraction();
+    assert.equal(children.length, 1);
+    assert.equal(style.attributes['data-maxim4design-extraction'], 'transitions-off');
+    assert.match(style.textContent, /transition:none!important/);
+    restore();
+    assert.equal(children.length, 0);
+  } finally {
+    (globalThis as any).document = origDocument;
+  }
 });
 
