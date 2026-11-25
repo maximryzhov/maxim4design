@@ -316,6 +316,35 @@ export function computeTargetImageDimension(
 }
 
 /**
+ * CSS commonly hides a text fallback once an image is embedded:
+ * `.project-photo:has(img[src^="data:"]) .project-photo-fallback { display:none }`.
+ * The extractor reads the DOM before src rewriting, so hide the fallback layer
+ * after the image has actually been resolved. Keep it when only a placeholder
+ * was produced (the real photo is still missing).
+ */
+function hideResolvedImageFallbacks(root: FIRNode): void {
+  const visit = (node: FIRNode) => {
+    if (node.children) {
+      const hasResolvedImage = node.children.some(
+        (child) =>
+          child.type === 'IMAGE' &&
+          Boolean(child.imageData?.base64?.startsWith('data:image/')) &&
+          !child.imageData?.isPlaceholder
+      );
+      if (hasResolvedImage) {
+        for (const child of node.children) {
+          if (child.type === 'TEXT' && /fallback/i.test(child.name)) {
+            child.visible = false;
+          }
+        }
+      }
+      for (const child of node.children) visit(child);
+    }
+  };
+  visit(root);
+}
+
+/**
  * Walks an extracted FIRNode tree and resolves any HTTP(S) or oversized imageData.base64
  * entries asynchronously.
  */
@@ -348,10 +377,12 @@ export async function resolveTreeImagesAsync(
           resolveImageUrlToBase64(src, nodeMaxDim, fetchExternalImage, flipX).then((resolved) => {
             if (resolved) {
               target.base64 = resolved;
+              delete target.isPlaceholder;
             } else {
               // Never leave an HTTP(S) URL or a blank bitmap in FIR: the plugin
               // cannot fetch URLs and a transparent image becomes a white card.
               target.base64 = IMAGE_PLACEHOLDER_DATA_URL;
+              target.isPlaceholder = true;
             }
           })
         );
@@ -366,6 +397,7 @@ export async function resolveTreeImagesAsync(
 
   walk(root);
   await Promise.all(tasks);
+  hideResolvedImageFallbacks(root);
   return root;
 }
 

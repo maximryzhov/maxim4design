@@ -300,3 +300,71 @@ test('resolveTreeImagesAsync replaces an unresolvable URL with a placeholder dat
   }
 });
 
+test('resolveTreeImagesAsync hides a project-photo fallback only for a resolved image', async () => {
+  const validPng =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const makeTree = (base64: string): FIRNode => ({
+    id: 'photo-frame',
+    name: 'a.project-photo',
+    type: 'FRAME',
+    bounds: { x: 0, y: 0, width: 400, height: 300 },
+    visible: true,
+    opacity: 1,
+    clipsContent: true,
+    zIndex: 0,
+    children: [
+      {
+        id: 'fallback',
+        name: 'span.project-photo-fallback',
+        type: 'TEXT',
+        bounds: { x: 0, y: 0, width: 200, height: 30 },
+        visible: true,
+        opacity: 0.7,
+        clipsContent: false,
+        zIndex: 0,
+        textData: {
+          characters: 'Fallback',
+          segments: [
+            {
+              start: 0,
+              end: 8,
+              fontFamily: 'Inter',
+              fontWeight: 700,
+              fontSize: 20,
+              color: { r: 0, g: 0, b: 0, a: 1 },
+            },
+          ],
+        },
+      },
+      {
+        id: 'photo',
+        name: 'img',
+        type: 'IMAGE',
+        bounds: { x: 0, y: 0, width: 400, height: 300 },
+        visible: true,
+        opacity: 1,
+        clipsContent: false,
+        zIndex: 1,
+        imageData: { base64, scaleMode: 'FILL' },
+      },
+    ],
+  });
+
+  const resolvedTree = makeTree(validPng);
+  await resolveTreeImagesAsync(resolvedTree);
+  assert.equal(resolvedTree.children?.[0].visible, false);
+
+  const origFetch = globalThis.fetch;
+  try {
+    (globalThis as any).fetch = async () => {
+      throw new Error('offline');
+    };
+    const unresolvedTree = makeTree('https://example.com/missing.png');
+    await resolveTreeImagesAsync(unresolvedTree, 2048, async () => undefined);
+    assert.equal(unresolvedTree.children?.[0].visible, true);
+    assert.equal(unresolvedTree.children?.[1].imageData?.isPlaceholder, true);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+

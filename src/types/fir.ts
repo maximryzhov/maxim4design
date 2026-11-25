@@ -121,6 +121,8 @@ export interface FIRImageData {
   scaleMode: 'FILL' | 'FIT' | 'CROP';
   /** True when the bitmap was horizontally mirrored during extraction (CSS scaleX(-1)). */
   flipX?: boolean;
+  /** True when the image could not be resolved and a neutral placeholder is used. */
+  isPlaceholder?: boolean;
 }
 
 export interface FIRFontAsset {
