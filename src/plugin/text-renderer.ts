@@ -140,6 +140,29 @@ export async function renderTextNode(
     }
   }
 
+  // Small single-glyph badges (e.g. FAQ "+" in a 52x52/37x37 circle) are extracted
+  // with text bounds equal to the parent frame. Center the glyph both axes.
+  const isBadgeGlyph =
+    Boolean(parentFrame) &&
+    characters.trim().length > 0 &&
+    characters.trim().length <= 2 &&
+    Math.abs(width - (parentFrame as FrameNode).width) <= 1 &&
+    Math.abs(height - (parentFrame as FrameNode).height) <= 1;
+
+  if (isBadgeGlyph) {
+    try {
+      textNode.textAlignHorizontal = 'CENTER';
+    } catch {
+      // Ignore
+    }
+    try {
+      textNode.textAlignVertical = 'CENTER';
+    } catch {
+      // Ignore
+    }
+    textNode.textAutoResize = 'NONE';
+  }
+
   textNode.x = relX;
   textNode.y = relY;
   textNode.resize(width, height);
@@ -238,7 +261,10 @@ export async function renderTextNode(
   }
 
   // Apply textAutoResize after all range fonts/sizes are set to avoid mid-word wrapping on fallback fonts
-  if (textData?.whiteSpace === 'nowrap' || textData?.isSingleLine) {
+  if (isBadgeGlyph) {
+    // Keep the badge box fixed; alignment handles both axes.
+    textNode.textAutoResize = 'NONE';
+  } else if (textData?.whiteSpace === 'nowrap' || textData?.isSingleLine) {
     // Right/center aligned single-line text needs the original box width, otherwise
     // WIDTH_AND_HEIGHT collapses it to the text and alignment becomes meaningless.
     const preserveBox =
