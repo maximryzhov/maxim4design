@@ -259,6 +259,19 @@ function isElementVisible(computed: CSSStyleDeclaration, rect: DOMRect | { width
 }
 
 /**
+ * Returns true for a `<details>` element whose content is collapsed.
+ * Chrome still reports layout boxes for the hidden answer inside such an element,
+ * so visibility must be decided from the element's open state rather than from
+ * getBoundingClientRect()/getClientRects().
+ */
+function isClosedDetails(element: HTMLElement): boolean {
+  return (
+    element.tagName.toUpperCase() === 'DETAILS' &&
+    (element as HTMLDetailsElement).open !== true
+  );
+}
+
+/**
  * Main DOM element extractor. Traverses the DOM subtree starting from rootElement
  * and builds a valid FIRNode tree.
  */
@@ -486,6 +499,7 @@ function traverseElement(element: HTMLElement): FIRNode {
   const id = generateNodeId(element);
   const name = getNodeName(element);
   const visible = isElementVisible(computed, rect);
+  const closedDetails = isClosedDetails(element);
   const opacity = parseFloat(computed.opacity) || 1;
   const clipsContent =
     computed.overflow === 'hidden' ||
@@ -587,6 +601,7 @@ function traverseElement(element: HTMLElement): FIRNode {
     const nodeType = typeof node.nodeType === 'number' ? node.nodeType : 1;
 
     if (nodeType === 3 /* TEXT_NODE */) {
+      if (closedDetails) continue;
       if (node.textContent && node.textContent.trim()) {
         childNodes.push(node);
       }
@@ -595,6 +610,11 @@ function traverseElement(element: HTMLElement): FIRNode {
     if (nodeType !== 1 /* ELEMENT_NODE */) continue;
 
     const child = node as HTMLElement;
+    // A closed <details> only renders its <summary>; Chrome still gives the
+    // answer content a layout box, which otherwise leaks into the FIR.
+    if (closedDetails && child.tagName.toUpperCase() !== 'SUMMARY') {
+      continue;
+    }
     if (
       child.tagName.toUpperCase() === 'INPUT' &&
       String((child as HTMLInputElement).type || '').toLowerCase() === 'hidden'

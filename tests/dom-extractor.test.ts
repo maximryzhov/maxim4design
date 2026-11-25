@@ -289,3 +289,76 @@ test('extractFIRFromElement infers itemSpacing from child margins when flex gap 
   assert.equal(fir.layout?.mode, 'HORIZONTAL');
   assert.equal(fir.layout?.itemSpacing, 16);
 });
+
+test('extractFIRFromElement skips answer content of a closed details element', () => {
+  setupMockDOM();
+
+  const summaryEl = createMockElement({
+    tagName: 'summary',
+    textContent: 'Нужно ли ухаживать за фитостеной?',
+    rect: { x: 0, y: 0, width: 600, height: 93 },
+  });
+  const answerEl = createMockElement({
+    tagName: 'p',
+    textContent: 'Поливать и подкармливать растения не нужно.',
+    rect: { x: 0, y: 93, width: 600, height: 44 },
+  });
+
+  const detailsEl = createMockElement({
+    tagName: 'details',
+    rect: { x: 0, y: 0, width: 600, height: 93 },
+    children: [summaryEl, answerEl],
+  }) as any;
+  detailsEl.open = false;
+
+  const rootEl = createMockElement({
+    tagName: 'div',
+    rect: { x: 0, y: 0, width: 600, height: 93 },
+    children: [detailsEl],
+  });
+
+  const fir = extractFIRFromElement(rootEl as any);
+  const serialized = JSON.stringify(fir);
+  assert.ok(serialized.includes('Нужно ли ухаживать за фитостеной?'));
+  assert.ok(!serialized.includes('Поливать и подкармливать растения не нужно.'));
+
+  // The details frame itself stays in the tree, but its answer is not a child.
+  const detailsFir = fir.children?.[0];
+  assert.ok(detailsFir);
+  const detailsText = JSON.stringify(detailsFir);
+  assert.ok(!detailsText.includes('Поливать и подкармливать растения не нужно.'));
+});
+
+test('extractFIRFromElement keeps answer content of an open details element', () => {
+  setupMockDOM();
+
+  const summaryEl = createMockElement({
+    tagName: 'summary',
+    textContent: 'Вопрос',
+    rect: { x: 0, y: 0, width: 600, height: 93 },
+  });
+  const answerEl = createMockElement({
+    tagName: 'p',
+    textContent: 'Ответ',
+    rect: { x: 0, y: 93, width: 600, height: 44 },
+  });
+
+  const detailsEl = createMockElement({
+    tagName: 'details',
+    rect: { x: 0, y: 0, width: 600, height: 137 },
+    children: [summaryEl, answerEl],
+  }) as any;
+  detailsEl.open = true;
+
+  const rootEl = createMockElement({
+    tagName: 'div',
+    rect: { x: 0, y: 0, width: 600, height: 137 },
+    children: [detailsEl],
+  });
+
+  const fir = extractFIRFromElement(rootEl as any);
+  const serialized = JSON.stringify(fir);
+  assert.ok(serialized.includes('Вопрос'));
+  assert.ok(serialized.includes('Ответ'));
+});
+
