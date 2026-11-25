@@ -182,9 +182,23 @@ export async function renderFIRNode(
     }
   }
 
+  const hasAutoMargins = Boolean(node.children?.some((child) => child.autoMarginTop));
+  const autoLayoutActive = Boolean(
+    node.layout &&
+      node.layout.mode !== 'NONE' &&
+      options?.useAutoLayout !== false &&
+      !hasAutoMargins
+  );
+
   // Auto Layout configuration (optional based on user settings)
-  if (node.layout && options?.useAutoLayout !== false) {
+  if (autoLayoutActive && node.layout) {
     applyAutoLayout(frame, node.layout);
+  } else if (node.layout) {
+    try {
+      frame.layoutMode = 'NONE';
+    } catch {
+      // ignore in mocks/older APIs
+    }
   }
 
   // Recursively render children in proper stacking context order
@@ -201,7 +215,7 @@ export async function renderFIRNode(
       const childRelY = childRenderBounds.y - renderBounds.y;
 
       if (childNode.layout) {
-        if (node.layout && node.layout.mode !== 'NONE' && options?.useAutoLayout !== false) {
+        if (autoLayoutActive) {
           applyChildSizing(childSceneNode, {
             horizontal: childNode.layout.sizingHorizontal,
             vertical: childNode.layout.sizingVertical,
@@ -212,7 +226,7 @@ export async function renderFIRNode(
       }
 
       // Ensure exact relative coordinates are preserved when parent is not Auto Layout
-      if (!node.layout || node.layout.mode === 'NONE' || options?.useAutoLayout === false) {
+      if (!autoLayoutActive) {
         childSceneNode.x = childRelX;
         childSceneNode.y = childRelY;
       }

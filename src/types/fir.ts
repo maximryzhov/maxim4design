@@ -184,6 +184,8 @@ export interface FIRNode {
   transform?: FIRTransform;
   fonts?: FIRFontAsset[];
   zIndex: number;
+  /** Child is pinned to the parent bottom by CSS `margin-top:auto`. */
+  autoMarginTop?: boolean;
   children?: FIRNode[];
 }
 

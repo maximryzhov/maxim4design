@@ -272,6 +272,49 @@ function isClosedDetails(element: HTMLElement): boolean {
 }
 
 /**
+ * Chrome resolves `margin-top:auto` to the used `0px` value in getComputedStyle,
+ * so the only reliable source is the stylesheet rule itself. Walk same-origin
+ * stylesheets and check which rules with `margin-top:auto` match the element.
+ */
+function hasAutoMarginTopRule(element: HTMLElement): boolean {
+  if (element.style && element.style.marginTop === 'auto') return true;
+  if (typeof document === 'undefined' || !document.styleSheets) return false;
+
+  const matchesRule = (rule: CSSRule): boolean => {
+    const styleRule = rule as CSSStyleRule;
+    if (styleRule.selectorText && styleRule.style) {
+      if (styleRule.style.marginTop === 'auto') {
+        try {
+          if (element.matches(styleRule.selectorText)) return true;
+        } catch {
+          // invalid/unsupported selector
+        }
+      }
+    }
+    const nested = (rule as CSSGroupingRule).cssRules;
+    if (nested) {
+      for (let i = 0; i < nested.length; i++) {
+        if (matchesRule(nested[i])) return true;
+      }
+    }
+    return false;
+  };
+
+  for (let i = 0; i < document.styleSheets.length; i++) {
+    try {
+      const rules = document.styleSheets[i].cssRules;
+      if (!rules) continue;
+      for (let j = 0; j < rules.length; j++) {
+        if (matchesRule(rules[j])) return true;
+      }
+    } catch {
+      // Cross-origin stylesheet: cannot inspect, ignore.
+    }
+  }
+  return false;
+}
+
+/**
  * Main DOM element extractor. Traverses the DOM subtree starting from rootElement
  * and builds a valid FIRNode tree.
  */
@@ -962,7 +1005,12 @@ function traverseElement(element: HTMLElement): FIRNode {
         textData,
       });
     } else {
-      children.push(traverseElement(childNode as unknown as HTMLElement));
+      const childElement = childNode as unknown as HTMLElement;
+      const childNodeFir = traverseElement(childElement);
+      if (hasAutoMarginTopRule(childElement)) {
+        childNodeFir.autoMarginTop = true;
+      }
+      children.push(childNodeFir);
     }
   }
 

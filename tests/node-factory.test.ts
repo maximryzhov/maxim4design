@@ -221,3 +221,53 @@ test('renderFIRNode applies rotation and removes bounding-box inflation', async 
   assert.equal(node.children[0].width, 37);
   assert.equal(node.children[0].height, 37);
 });
+
+test('renderFIRNode falls back to absolute layout when a child uses margin-top:auto', async () => {
+  setupFigmaMock();
+
+  const parent: FIRNode = {
+    id: 'contact-copy',
+    name: 'div.contact-copy',
+    type: 'FRAME',
+    bounds: { x: 0, y: 0, width: 300, height: 300 },
+    visible: true,
+    opacity: 1,
+    clipsContent: false,
+    zIndex: 0,
+    layout: {
+      mode: 'VERTICAL',
+      wrap: false,
+      itemSpacing: 0,
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      primaryAlign: 'MIN',
+      counterAlign: 'MIN',
+    },
+    children: [
+      {
+        id: 'heading',
+        name: 'h2',
+        type: 'FRAME',
+        bounds: { x: 0, y: 0, width: 300, height: 100 },
+        visible: true,
+        opacity: 1,
+        clipsContent: false,
+        zIndex: 0,
+      },
+      {
+        id: 'details',
+        name: 'div.contact-details',
+        type: 'FRAME',
+        bounds: { x: 0, y: 250, width: 300, height: 50 },
+        visible: true,
+        opacity: 1,
+        clipsContent: false,
+        zIndex: 0,
+        autoMarginTop: true,
+      },
+    ],
+  };
+
+  const node = (await renderFIRNode(parent)) as any;
+  assert.equal(node.layoutMode, 'NONE');
+  assert.equal(node.children[1].y, 250);
+});
