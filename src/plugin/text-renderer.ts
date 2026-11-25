@@ -246,7 +246,16 @@ export async function renderTextNode(
   // Fit oversized lines before auto-resize: fallback/alias fonts are wider than the
   // source font and used to split words or overflow their fixed boxes.
   const firstFontSize = firstSeg?.fontSize ?? 0;
-  if (firstFontSize >= 24 && characters.trim() && segments.length > 0) {
+  const isSingleLineText = textData?.whiteSpace === 'nowrap' || textData?.isSingleLine;
+  const preserveBox =
+    textAlign === 'CENTER' || textAlign === 'RIGHT' || textAlign === 'JUSTIFIED';
+
+  if (
+    !isBadgeGlyph &&
+    characters.trim() &&
+    segments.length > 0 &&
+    (firstFontSize >= 24 || (isSingleLineText && preserveBox))
+  ) {
     const longestLine = characters
       .split('\n')
       .map((line) => line.trim())
@@ -264,11 +273,9 @@ export async function renderTextNode(
   if (isBadgeGlyph) {
     // Keep the badge box fixed; alignment handles both axes.
     textNode.textAutoResize = 'NONE';
-  } else if (textData?.whiteSpace === 'nowrap' || textData?.isSingleLine) {
+  } else if (isSingleLineText) {
     // Right/center aligned single-line text needs the original box width, otherwise
     // WIDTH_AND_HEIGHT collapses it to the text and alignment becomes meaningless.
-    const preserveBox =
-      textAlign === 'CENTER' || textAlign === 'RIGHT' || textAlign === 'JUSTIFIED';
     textNode.textAutoResize = preserveBox ? 'NONE' : 'WIDTH_AND_HEIGHT';
   } else {
     textNode.textAutoResize = 'HEIGHT';

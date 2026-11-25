@@ -104,3 +104,79 @@ test('renderTextNode applies alignment and keeps box for right-aligned nowrap te
   assert.equal(textNode.textAutoResize, 'NONE');
   assert.equal(textNode.width, 675);
 });
+
+test('renderTextNode shrinks oversized centered CTA text to keep one line', async () => {
+  fontManager.clearCache();
+  const rangeSizes: number[] = [];
+
+  class MockCtaTextNode {
+    type = 'TEXT';
+    name = '';
+    characters = '';
+    fontName: any = null;
+    fontSize = 16;
+    x = 0;
+    y = 0;
+    _width = 0;
+    height = 0;
+    opacity = 1;
+    visible = true;
+    textAutoResize = 'NONE';
+    textAlignHorizontal = 'LEFT';
+    textAlignVertical = 'TOP';
+
+    get width() {
+      return this.textAutoResize === 'WIDTH_AND_HEIGHT' ? 190 : this._width;
+    }
+    set width(value: number) {
+      this._width = value;
+    }
+    resize(w: number, h: number) {
+      this._width = w;
+      this.height = h;
+    }
+    setRangeFontName() {}
+    setRangeFontSize(_s: number, _e: number, size: number) {
+      rangeSizes.push(size);
+    }
+    setRangeFills() {}
+  }
+
+  (globalThis as any).figma = {
+    loadFontAsync: async () => {},
+    createText: () => new MockCtaTextNode(),
+  };
+
+  const node: FIRNode = {
+    id: 'submit-text',
+    name: 'button#submit-button-text',
+    type: 'TEXT',
+    bounds: { x: 0, y: 0, width: 158.076, height: 22.3 },
+    visible: true,
+    opacity: 1,
+    clipsContent: false,
+    zIndex: 0,
+    textData: {
+      characters: 'ОБСУДИТЬ ПРОЕКТ',
+      isSingleLine: true,
+      whiteSpace: 'nowrap',
+      textAlign: 'CENTER',
+      segments: [
+        {
+          start: 0,
+          end: 15,
+          fontFamily: 'ContactBebasExpanded',
+          fontWeight: 800,
+          fontSize: 21.6189,
+          color: { r: 1, g: 1, b: 1, a: 1 },
+        },
+      ],
+    },
+  };
+
+  const text = (await renderTextNode(node)) as any;
+  assert.equal(text.textAutoResize, 'NONE');
+  assert.equal(text.width, 158.076);
+  assert.ok(rangeSizes.length > 0, 'expected CTA text to be scaled down');
+  assert.ok(rangeSizes[rangeSizes.length - 1] < 21.6189);
+});
