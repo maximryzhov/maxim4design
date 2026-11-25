@@ -38,15 +38,40 @@ async function copyStaticFiles() {
 }
 
 async function generateBookmarklet() {
-  const extractorFile = path.join(__dirname, 'dist/extractor.js');
   const bookmarkletFile = path.join(__dirname, 'dist/bookmarklet.js');
 
-  if (fs.existsSync(extractorFile)) {
-    const code = fs.readFileSync(extractorFile, 'utf8');
-    const bookmarkletCode = `javascript:(function(){${code};try{const fir=maxim4design.extractFIRFromElement(document.body);navigator.clipboard.writeText(JSON.stringify(fir,null,2));alert('maxim4design: Страница скопирована в буфер обмена!');}catch(e){alert('Ошибка: '+e.message);}})();`;
-    fs.writeFileSync(bookmarkletFile, bookmarkletCode, 'utf8');
-    console.log('[esbuild] Generated dist/bookmarklet.js');
+  // A bookmarklet is a `javascript:` URL: the browser strips every newline from it
+  // before execution, so a multi-line bundle with `//` comments silently comments out
+  // the rest of the script. Build a minified, single-line copy instead.
+  const result = await esbuild.build({
+    entryPoints: ['src/extractor/index.ts'],
+    bundle: true,
+    format: 'iife',
+    globalName: 'maxim4design',
+    target: 'es2020',
+    minify: true,
+    legalComments: 'none',
+    // Lower template literals so `\n` inside text becomes an escape sequence:
+    // the browser removes raw newlines from a `javascript:` URL, which would
+    // silently drop line breaks baked into the bundle.
+    supported: { 'template-literal': false },
+    write: false,
+    logLevel: 'silent',
+  });
+
+  const code = result.outputFiles[0].text.trim();
+  if (code.includes('\n')) {
+    throw new Error('Bookmarklet bundle must be a single line');
   }
+
+  const source = `(function(){${code};try{const fir=maxim4design.extractFIRFromElement(document.body);navigator.clipboard.writeText(JSON.stringify(fir,null,2));alert('maxim4design: Страница скопирована в буфер обмена!');}catch(e){alert('Ошибка: '+e.message);}})();`;
+
+  // Percent-encode the script: raw `#` inside a `javascript:` URL starts a fragment
+  // and would truncate the code (CSS selectors, hex colors, SVG), while `%` keeps the
+  // payload ASCII-safe. Browsers decode the path before executing it.
+  const bookmarkletCode = `javascript:${encodeURIComponent(source)}`;
+  fs.writeFileSync(bookmarkletFile, bookmarkletCode, 'utf8');
+  console.log('[esbuild] Generated dist/bookmarklet.js (single line, minified, URL-encoded)');
 }
 
 async function run() {
