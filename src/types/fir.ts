@@ -115,6 +115,14 @@ export interface FIRFontAsset {
   format?: string;
 }
 
+export interface FIRTransform {
+  scaleX: number;
+  scaleY: number;
+  rotation: number;
+  translateX: number;
+  translateY: number;
+}
+
 export interface FIRNode {
   id: string;
   name: string;
@@ -128,6 +136,7 @@ export interface FIRNode {
   textData?: FIRTextData;
   svgContent?: string;
   imageData?: FIRImageData;
+  transform?: FIRTransform;
   fonts?: FIRFontAsset[];
   zIndex: number;
   children?: FIRNode[];

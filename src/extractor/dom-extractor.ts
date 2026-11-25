@@ -5,6 +5,7 @@ import type {
   FIRBounds,
   FIRStyle,
   FIRLayout,
+  FIRTransform,
   BorderSideStyle,
   TextSegment,
 } from '../types/fir.ts';
@@ -333,6 +334,40 @@ function getTextNodeBounds(node: Node): FIRBounds | undefined {
   }
 }
 
+function parseTransformMatrix(computed: CSSStyleDeclaration): FIRTransform | undefined {
+  const raw = computed.transform;
+  if (!raw || raw === 'none') return undefined;
+
+  const match = raw.match(/matrix\(([^)]+)\)/);
+  if (!match) return undefined;
+
+  const values = match[1].split(',').map((value) => parseFloat(value.trim()));
+  if (values.length < 6 || values.some((value) => Number.isNaN(value))) return undefined;
+
+  const [a, b, c, d, e, f] = values;
+  const isIdentity =
+    Math.abs(a - 1) < 0.0001 &&
+    Math.abs(b) < 0.0001 &&
+    Math.abs(c) < 0.0001 &&
+    Math.abs(d - 1) < 0.0001;
+  if (isIdentity) return undefined;
+
+  let rotation = 0;
+  if (Math.abs(b) > 0.0001 || Math.abs(c) > 0.0001) {
+    rotation = (Math.atan2(b, a) * 180) / Math.PI;
+  } else if (a < 0 && d < 0) {
+    rotation = 180;
+  }
+
+  return {
+    scaleX: a,
+    scaleY: d,
+    rotation,
+    translateX: e,
+    translateY: f,
+  };
+}
+
 function buildFormControlNode(
   element: HTMLElement,
   kind: FormControlKind,
@@ -462,6 +497,7 @@ function traverseElement(element: HTMLElement): FIRNode {
   const style = extractElementStyles(computed);
 
   const layout = analyzeElementLayout(computed);
+  const transform = parseTransformMatrix(computed);
 
   // 1. SVG element handler
   if (tagName === 'SVG') {
@@ -497,6 +533,7 @@ function traverseElement(element: HTMLElement): FIRNode {
       zIndex,
       style: Object.keys(style).length > 0 ? style : undefined,
       imageData,
+      transform,
     };
   }
 
@@ -745,6 +782,7 @@ function traverseElement(element: HTMLElement): FIRNode {
     zIndex,
     style: Object.keys(style).length > 0 ? style : undefined,
     imageData: bgImageData,
+    transform,
     children: children.length > 0 ? children : undefined,
   };
 }

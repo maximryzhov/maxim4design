@@ -105,5 +105,23 @@ export async function renderImageNode(
     rect.strokes = [{ type: 'SOLID', color: { r: 0.75, g: 0.78, b: 0.82 }, opacity: 1 }];
   }
 
+  if (node.transform) {
+    // CSS rotation is clockwise; Figma's `rotation` is counter-clockwise.
+    if (Math.abs(node.transform.rotation) > 0.01) {
+      rect.rotation = -node.transform.rotation;
+    }
+
+    // Mirror via relativeTransform: Figma has no negative scale API. `a = -1`
+    // flips the node in place when the translation is shifted by its width.
+    if (node.transform.scaleX < 0 || node.transform.scaleY < 0) {
+      const scaleX = node.transform.scaleX < 0 ? -1 : 1;
+      const scaleY = node.transform.scaleY < 0 ? -1 : 1;
+      rect.relativeTransform = [
+        [scaleX, 0, rect.x + (scaleX < 0 ? width : 0)],
+        [0, scaleY, rect.y + (scaleY < 0 ? height : 0)],
+      ];
+    }
+  }
+
   return rect;
 }
