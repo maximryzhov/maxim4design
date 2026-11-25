@@ -63,6 +63,15 @@ export async function renderTextNode(
     }
   }
 
+  const textAlign = textData?.textAlign;
+  if (textAlign) {
+    try {
+      textNode.textAlignHorizontal = textAlign;
+    } catch {
+      // Ignore in mocks / unsupported values
+    }
+  }
+
   textNode.x = relX;
   textNode.y = relY;
   textNode.resize(width, height);
@@ -148,7 +157,11 @@ export async function renderTextNode(
   const usedFallbackFont = baseFont.family.toLowerCase() !== requestedFamily;
 
   if (textData?.whiteSpace === 'nowrap' || textData?.isSingleLine) {
-    textNode.textAutoResize = 'WIDTH_AND_HEIGHT';
+    // Right/center aligned single-line text needs the original box width, otherwise
+    // WIDTH_AND_HEIGHT collapses it to the text and alignment becomes meaningless.
+    const preserveBox =
+      textAlign === 'CENTER' || textAlign === 'RIGHT' || textAlign === 'JUSTIFIED';
+    textNode.textAutoResize = preserveBox ? 'NONE' : 'WIDTH_AND_HEIGHT';
   } else {
     const segFontSize = firstSeg?.fontSize ?? 0;
     if (usedFallbackFont && segFontSize >= 28) {

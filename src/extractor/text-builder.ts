@@ -1,4 +1,10 @@
-import type { FIRTextData, TextSegment, RGBAColor } from '../types/fir.ts';
+import type {
+  FIRTextData,
+  TextSegment,
+  RGBAColor,
+  FIRTextAlign,
+  FIRTextTransform,
+} from '../types/fir.ts';
 import { parseCssColor } from './dom-extractor.ts';
 
 const INLINE_TAGS = new Set([
@@ -111,6 +117,36 @@ export function normalizeWhitespace(raw: string, whiteSpace = 'normal'): string 
     return raw.replace(/[ \t]+/g, ' ');
   }
   return raw.replace(/\s+/g, ' ');
+}
+
+function normalizeTextTransform(raw: string | undefined): FIRTextTransform | undefined {
+  const value = (raw || '').toLowerCase();
+  if (value === 'uppercase' || value === 'lowercase' || value === 'capitalize') return value;
+  if (value === 'none' || value === '') return 'none';
+  return undefined;
+}
+
+function applyTextTransform(text: string, transform: FIRTextTransform | undefined): string {
+  if (!transform || transform === 'none') return text;
+  let transformed = text;
+  if (transform === 'uppercase') transformed = text.toUpperCase();
+  else if (transform === 'lowercase') transformed = text.toLowerCase();
+  else if (transform === 'capitalize') {
+    transformed = text.replace(/(^|\s)(\S)/g, (_match, prefix: string, char: string) =>
+      prefix + char.toUpperCase()
+    );
+  }
+  // Keep segment ranges valid: accept only transforms that preserve length.
+  return transformed.length === text.length ? transformed : text;
+}
+
+function mapTextAlign(raw: string | undefined): FIRTextAlign | undefined {
+  const value = (raw || '').toLowerCase();
+  if (value === 'center') return 'CENTER';
+  if (value === 'right' || value === 'end') return 'RIGHT';
+  if (value === 'justify') return 'JUSTIFIED';
+  if (value === 'left' || value === 'start') return 'LEFT';
+  return undefined;
 }
 
 interface SegmentCollectorState {
@@ -270,6 +306,8 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
 
   const whiteSpace = rootComputed.whiteSpace || 'normal';
   let isSingleLine = whiteSpace === 'nowrap';
+  const textAlign = mapTextAlign(rootComputed.textAlign);
+  const textTransform = normalizeTextTransform(rootComputed.textTransform);
 
   if (!isSingleLine && !state.characters.includes('\n') && typeof rootElement.getBoundingClientRect === 'function') {
     const rect = rootElement.getBoundingClientRect();
@@ -282,10 +320,12 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
   }
 
   return {
-    characters: state.characters,
+    characters: applyTextTransform(state.characters, textTransform),
     segments: state.segments,
     whiteSpace,
     isSingleLine,
+    textAlign,
+    textTransform,
   };
 }
 
@@ -325,10 +365,12 @@ export function extractTextNodeData(
   }
 
   return {
-    characters,
+    characters: applyTextTransform(characters, normalizeTextTransform(computed.textTransform)),
     segments: [segment],
     whiteSpace,
     isSingleLine,
+    textAlign: mapTextAlign(computed.textAlign),
+    textTransform: normalizeTextTransform(computed.textTransform),
   };
 }
 
@@ -384,11 +426,14 @@ export function extractFormControlTextData(
 
   const segment = createSegmentFromComputed(computed, 0, characters.length, color);
   const whiteSpace = kind === 'textarea' ? computed.whiteSpace || 'pre-wrap' : 'nowrap';
+  const textTransform = normalizeTextTransform(computed.textTransform);
 
   return {
-    characters,
+    characters: applyTextTransform(characters, textTransform),
     segments: [segment],
     whiteSpace,
     isSingleLine: kind !== 'textarea',
+    textAlign: mapTextAlign(computed.textAlign),
+    textTransform,
   };
 }

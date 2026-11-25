@@ -90,11 +90,16 @@ export interface TextSegment {
   textDecoration?: 'NONE' | 'UNDERLINE' | 'STRIKETHROUGH';
 }
 
+export type FIRTextAlign = 'LEFT' | 'CENTER' | 'RIGHT' | 'JUSTIFIED';
+export type FIRTextTransform = 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+
 export interface FIRTextData {
   characters: string;
   segments: TextSegment[];
   whiteSpace?: string;
   isSingleLine?: boolean;
+  textAlign?: FIRTextAlign;
+  textTransform?: FIRTextTransform;
 }
 
 export interface FIRImageData {
