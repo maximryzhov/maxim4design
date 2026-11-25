@@ -105,6 +105,8 @@ export interface FIRTextData {
 export interface FIRImageData {
   base64: string;
   scaleMode: 'FILL' | 'FIT' | 'CROP';
+  /** True when the bitmap was horizontally mirrored during extraction (CSS scaleX(-1)). */
+  flipX?: boolean;
 }
 
 export interface FIRFontAsset {

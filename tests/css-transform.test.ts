@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { extractFIRFromElement } from '../src/extractor/dom-extractor.ts';
+import { isMirroredX } from '../src/extractor/image-loader.ts';
 import { renderImageNode } from '../src/plugin/image-renderer.ts';
 import type { FIRNode } from '../src/types/fir.ts';
 
@@ -72,6 +73,7 @@ test('extractor reads scaleX(-1) from CSS matrix', () => {
   assert.equal(fir.transform!.scaleX, -1);
   assert.equal(fir.transform!.scaleY, 1);
   assert.equal(fir.transform!.rotation, 0);
+  assert.equal(fir.imageData?.flipX, true);
 });
 
 test('extractor reads rotation from CSS matrix', () => {
@@ -81,6 +83,14 @@ test('extractor reads rotation from CSS matrix', () => {
   );
   assert.ok(fir.transform);
   assert.ok(Math.abs(fir.transform!.rotation - 30) < 1);
+});
+
+test('isMirroredX detects only negative X scale', () => {
+  assert.equal(isMirroredX('matrix(-1, 0, 0, 1, 0, 0)'), true);
+  assert.equal(isMirroredX('matrix(1, 0, 0, -1, 0, 0)'), false);
+  assert.equal(isMirroredX('matrix(0.866, 0.5, -0.5, 0.866, 0, 0)'), false);
+  assert.equal(isMirroredX('none'), false);
+  assert.equal(isMirroredX(undefined), false);
 });
 
 test('renderImageNode mirrors an image in place for scaleX(-1)', async () => {
@@ -126,8 +136,9 @@ test('renderImageNode mirrors an image in place for scaleX(-1)', async () => {
   };
 
   const rect = (await renderImageNode(node)) as any;
-  assert.equal(rect.relativeTransform[0][0], -1);
-  assert.equal(rect.relativeTransform[1][1], 1);
-  assert.equal(rect.relativeTransform[0][2], 400); // x + width
-  assert.equal(rect.relativeTransform[1][2], 200);
+  assert.equal(rect.fills[0].type, 'IMAGE');
+  assert.equal(rect.fills[0].scaleMode, 'FILL');
+  // Node box stays in place; mirroring is baked into the extracted bitmap.
+  assert.equal(rect.relativeTransform[0][0], 1);
+  assert.equal(rect.x, 100);
 });

@@ -4,6 +4,15 @@ import type { FIRImageData, FIRNode } from '../types/fir.ts';
 export const IMAGE_PROXY_TIMEOUT_MS = 15000;
 export const IMAGE_PROXY_RETRIES = 2;
 
+/** Detects `scaleX(-1)` (or a mirroring matrix) in a computed CSS transform. */
+export function isMirroredX(transform: string | undefined): boolean {
+  if (!transform || transform === 'none') return false;
+  const match = transform.match(/matrix\(([^)]+)\)/);
+  if (!match) return false;
+  const scaleX = parseFloat(match[1].split(',')[0]);
+  return Number.isFinite(scaleX) && scaleX < 0;
+}
+
 /**
  * Extracts url from CSS background-image property.
  * e.g. `url("https://example.com/pic.png")` -> `https://example.com/pic.png`
@@ -29,7 +38,8 @@ export function mapObjectFitToScaleMode(fit: string): 'FILL' | 'FIT' | 'CROP' {
  */
 export function imageToDataUrl(
   img: HTMLImageElement,
-  maxDimension = 2048
+  maxDimension = 2048,
+  flipX = false
 ): string | undefined {
   try {
     const width = img.naturalWidth || img.width || 1;
@@ -54,6 +64,10 @@ export function imageToDataUrl(
     const ctx = canvas.getContext('2d');
     if (!ctx) return undefined;
 
+    if (flipX) {
+      ctx.translate(targetWidth, 0);
+      ctx.scale(-1, 1);
+    }
     ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
     let pngData = canvas.toDataURL('image/png');
     // If PNG is still > 1.5MB, try JPEG compression if no transparency is needed,
@@ -89,7 +103,8 @@ export type ExternalImageFetcher = (url: string) => Promise<string | undefined>;
 
 async function fetchImageFromLocalProxy(
   url: string,
-  maxDimension: number
+  maxDimension: number,
+  flipX = false
 ): Promise<string | undefined> {
   if (typeof fetch !== 'function') return undefined;
 
@@ -108,7 +123,7 @@ async function fetchImageFromLocalProxy(
 
     const json = await resp.json().catch(() => null);
     if (json?.dataUrl) {
-      return resolveImageUrlToBase64(json.dataUrl, maxDimension);
+      return resolveImageUrlToBase64(json.dataUrl, maxDimension, undefined, flipX);
     }
 
     if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
@@ -117,7 +132,7 @@ async function fetchImageFromLocalProxy(
       try {
         const decoded = await new Promise<string | undefined>((resolve) => {
           const img = new Image();
-          img.onload = () => resolve(imageToDataUrl(img, maxDimension));
+          img.onload = () => resolve(imageToDataUrl(img, maxDimension, flipX));
           img.onerror = () => resolve(undefined);
           img.src = objUrl;
         });
@@ -143,13 +158,14 @@ async function fetchImageFromLocalProxy(
 export async function resolveImageUrlToBase64(
   url: string,
   maxDimension = 2048,
-  fetchExternalImage?: ExternalImageFetcher
+  fetchExternalImage?: ExternalImageFetcher,
+  flipX = false
 ): Promise<string | undefined> {
   if (!url) return undefined;
 
   if (url.startsWith('data:image/')) {
     const isSupported = url.startsWith('data:image/png') || url.startsWith('data:image/jpeg');
-    if (isSupported && url.length <= 1_000_000) {
+    if (isSupported && !flipX && url.length <= 1_000_000) {
       return url;
     }
     // Re-encode unsupported (e.g. WebP/AVIF) or oversized data URIs via canvas
@@ -158,7 +174,7 @@ export async function resolveImageUrlToBase64(
     }
     return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => resolve(imageToDataUrl(img, maxDimension) || url);
+      img.onload = () => resolve(imageToDataUrl(img, maxDimension, flipX) || url);
       img.onerror = () => resolve(url);
       img.src = url;
     });
@@ -177,7 +193,7 @@ export async function resolveImageUrlToBase64(
         try {
           const decoded = await new Promise<string | undefined>((resolve) => {
             const img = new Image();
-            img.onload = () => resolve(imageToDataUrl(img, maxDimension));
+            img.onload = () => resolve(imageToDataUrl(img, maxDimension, flipX));
             img.onerror = () => resolve(undefined);
             img.src = objUrl;
           });
@@ -196,7 +212,7 @@ export async function resolveImageUrlToBase64(
     try {
       const proxiedDataUrl = await fetchExternalImage(url);
       if (proxiedDataUrl) {
-        return resolveImageUrlToBase64(proxiedDataUrl, maxDimension);
+        return resolveImageUrlToBase64(proxiedDataUrl, maxDimension, undefined, flipX);
       }
     } catch (err) {
       console.warn('[ImageLoader] Proxy fetch failed:', url, err);
@@ -206,7 +222,7 @@ export async function resolveImageUrlToBase64(
   // Fallback to local bridge proxy (http://localhost:8765/proxy-image) if running.
   // Retry once: cold bridge fetches can take ~2-3s and transiently fail.
   for (let attempt = 0; attempt < IMAGE_PROXY_RETRIES; attempt++) {
-    const proxied = await fetchImageFromLocalProxy(url, maxDimension);
+    const proxied = await fetchImageFromLocalProxy(url, maxDimension, flipX);
     if (proxied) return proxied;
     if (attempt < IMAGE_PROXY_RETRIES - 1) {
       await new Promise((resolve) => setTimeout(resolve, 250));
@@ -249,15 +265,17 @@ export async function resolveTreeImagesAsync(
         node.bounds.height,
         maxDimension
       );
+      const flipX = target.flipX === true;
       if (
         src.startsWith('http://') ||
         src.startsWith('https://') ||
+        flipX ||
         (src.startsWith('data:image/') &&
           (src.length > 1_000_000 ||
             (!src.startsWith('data:image/png') && !src.startsWith('data:image/jpeg'))))
       ) {
         tasks.push(
-          resolveImageUrlToBase64(src, nodeMaxDim, fetchExternalImage).then((resolved) => {
+          resolveImageUrlToBase64(src, nodeMaxDim, fetchExternalImage, flipX).then((resolved) => {
             if (resolved) {
               target.base64 = resolved;
             }
@@ -306,6 +324,7 @@ export function isSmallBackgroundIcon(
 export function extractImageData(element: HTMLElement): FIRImageData | undefined {
   const tagName = element.tagName.toUpperCase();
   const computed = window.getComputedStyle(element);
+  const flipX = isMirroredX(computed.transform);
 
   if (tagName === 'IMG') {
     const img = element as HTMLImageElement;
@@ -318,6 +337,7 @@ export function extractImageData(element: HTMLElement): FIRImageData | undefined
     return {
       base64: base64Data || src,
       scaleMode,
+      flipX: flipX || undefined,
     };
   }
 
@@ -341,6 +361,7 @@ export function extractImageData(element: HTMLElement): FIRImageData | undefined
     return {
       base64: bgUrl,
       scaleMode,
+      flipX: flipX || undefined,
     };
   }
 
