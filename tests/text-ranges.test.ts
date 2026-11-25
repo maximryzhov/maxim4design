@@ -359,7 +359,7 @@ test('extractTextData converts BR elements to newlines and preserves spaces betw
   assert.ok(data.characters.includes('ОТ ИДЕИ ДО ЗЕЛЁНОЙ'));
 });
 
-test('renderTextNode compensates width for multiline large headings when font falls back to Inter', async () => {
+test('renderTextNode keeps source box width for multiline fallback headings', async () => {
   fontManager.clearCache();
   class MockHeadingTextNode {
     type = 'TEXT';
@@ -417,11 +417,13 @@ test('renderTextNode compensates width for multiline large headings when font fa
 
   const rendered = (await renderTextNode(headingNode)) as any;
   assert.equal(rendered.textAutoResize, 'HEIGHT');
-  assert.equal(rendered.width, 460); // 400 * 1.15
+  assert.equal(rendered.width, 400); // box must not be artificially widened
 });
 
-test('renderTextNode ensures minWidth accommodates longest word on condensed-to-Inter fallback', async () => {
+test('renderTextNode shrinks an oversized line to fit the source width', async () => {
   fontManager.clearCache();
+  const rangeSizes: number[] = [];
+
   class MockLongWordTextNode {
     type = 'TEXT';
     name = '';
@@ -429,17 +431,27 @@ test('renderTextNode ensures minWidth accommodates longest word on condensed-to-
     fontName: any = null;
     x = 0;
     y = 0;
-    width = 0;
+    _width = 0;
     height = 0;
     opacity = 1;
     visible = true;
     textAutoResize = 'NONE';
+
+    get width() {
+      // Probe measures a single long line; the main node keeps its resized box.
+      return this.textAutoResize === 'WIDTH_AND_HEIGHT' ? 900 : this._width;
+    }
+    set width(value: number) {
+      this._width = value;
+    }
     resize(w: number, h: number) {
-      this.width = w;
+      this._width = w;
       this.height = h;
     }
     setRangeFontName() {}
-    setRangeFontSize() {}
+    setRangeFontSize(_start: number, _end: number, size: number) {
+      rangeSizes.push(size);
+    }
     setRangeFills() {}
   }
 
@@ -450,7 +462,6 @@ test('renderTextNode ensures minWidth accommodates longest word on condensed-to-
     createText: () => new MockLongWordTextNode(),
   };
 
-  // "ИСКУССТВЕННЫЕ" has 13 chars at fontSize 48 => 13 * 48 * 0.72 = 449px (> 300 * 1.15 = 345px)
   const bannerNode: FIRNode = {
     id: 'banner-h2',
     name: 'h2.banner',
@@ -461,13 +472,13 @@ test('renderTextNode ensures minWidth accommodates longest word on condensed-to-
     clipsContent: false,
     zIndex: 0,
     textData: {
-      characters: 'НАСТОЯЩИЕ ВПЕЧАТЛЕНИЯ.\nИСКУССТВЕННЫЕ РАСТЕНИЯ.',
+      characters: 'ИСКУССТВЕННЫЕ',
       whiteSpace: 'normal',
       isSingleLine: false,
       segments: [
         {
           start: 0,
-          end: 47,
+          end: 13,
           fontFamily: 'ContactBebas',
           fontWeight: 800,
           fontSize: 48,
@@ -479,7 +490,9 @@ test('renderTextNode ensures minWidth accommodates longest word on condensed-to-
 
   const rendered = (await renderTextNode(bannerNode)) as any;
   assert.equal(rendered.textAutoResize, 'HEIGHT');
-  assert.ok(rendered.width >= 449, `Expected width >= 449, got ${rendered.width}`);
+  assert.equal(rendered.width, 300);
+  assert.ok(rangeSizes.length > 0, 'expected the line to be scaled down');
+  assert.ok(rangeSizes[rangeSizes.length - 1] < 48, `expected < 48, got ${rangeSizes}`);
 });
 
 test('renderTextNode applies node-level lineHeightPx before textAutoResize HEIGHT', async () => {

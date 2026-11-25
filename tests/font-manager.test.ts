@@ -156,3 +156,28 @@ test('selectMissingFontAssets returns only missing families with downloadable so
   assert.deepEqual(missing.map((f) => f.family), ['ContactBebas', 'ProcessMontserrat']);
   assert.ok(missing.every((f) => Boolean(f.sourceUrl)));
 });
+
+test('FontManager aliases ContactBebas to Oswald before falling back to Inter', async () => {
+  const available = [
+    { fontName: { family: 'Oswald', style: 'Regular' } },
+    { fontName: { family: 'Oswald', style: 'Bold' } },
+    { fontName: { family: 'Montserrat', style: 'Bold' } },
+    { fontName: { family: 'Inter', style: 'Extra Bold' } },
+  ];
+  (globalThis as any).figma = {
+    listAvailableFontsAsync: async () => available,
+    loadFontAsync: async (font: { family: string; style: string }) => {
+      const exists = available.some(
+        (item) => item.fontName.family === font.family && item.fontName.style === font.style
+      );
+      if (!exists) throw new Error(`Not found: ${font.family}/${font.style}`);
+    },
+  };
+
+  const manager = new FontManager();
+  await manager.initAvailableFonts();
+
+  const font = await manager.loadFontSafely('ContactBebas', 800);
+  assert.deepEqual(font, { family: 'Oswald', style: 'Bold' });
+  assert.ok(manager.getWarnings().some((warning) => warning.includes('(alias)')));
+});

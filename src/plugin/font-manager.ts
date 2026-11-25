@@ -3,6 +3,16 @@ import type { FIRFontAsset } from '../types/fir.ts';
 export const DEFAULT_FALLBACK_FONT: FontName = { family: 'Inter', style: 'Regular' };
 
 /**
+ * Custom/brand families map to the closest family available in Figma.
+ * Values are tried in order before falling back to Inter.
+ */
+export const FONT_ALIASES: Record<string, string[]> = {
+  contactbebas: ['Oswald'],
+  contactbebasexpanded: ['Oswald'],
+  processmontserrat: ['Montserrat'],
+};
+
+/**
  * Maps numeric CSS font-weight (100..900) and italic flag to Figma style names.
  */
 export function mapWeightToFigmaStyle(weight: number, isItalic = false): string {
@@ -211,6 +221,30 @@ export class FontManager {
       console.warn(
         `[FontManager] Font ${requestedFont.family} (${requestedFont.style}) not found in Figma. Trying Inter with same weight...`
       );
+    }
+
+    // 1c. Custom brand families: try a closest available alias (Oswald, Montserrat, ...)
+    const aliases = FONT_ALIASES[cleanedFamily.toLowerCase()];
+    if (aliases) {
+      for (const aliasFamily of aliases) {
+        const aliasFont = this.findBestStyleInFamily(
+          aliasFamily.toLowerCase(),
+          style,
+          weight,
+          isItalic
+        );
+        if (!aliasFont) continue;
+        try {
+          await figma.loadFontAsync(aliasFont);
+          this.markLoaded(aliasFont);
+          this.recordWarning(
+            `Шрифт "${requestedFont.family} (${requestedFont.style})" заменен на "${aliasFont.family} (${aliasFont.style})" (alias)`
+          );
+          return aliasFont;
+        } catch {
+          // Try next alias
+        }
+      }
     }
 
     // 2. Try Inter with same style
