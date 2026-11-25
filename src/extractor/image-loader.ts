@@ -85,8 +85,14 @@ export function isMirroredX(transform: string | undefined): boolean {
  */
 export function extractBackgroundImageUrl(bgImage: string): string | undefined {
   if (!bgImage || bgImage === 'none') return undefined;
-  const match = bgImage.match(/url\(\s*['"]?([^'"]+)['"]?\s*\)/i);
-  return match ? match[1] : undefined;
+  // Quoted URLs may legitimately contain the other quote character (SVG data URIs
+  // often contain single quotes inside a double-quoted url("...")).
+  const doubleQuoted = bgImage.match(/url\(\s*"([^"]+)"\s*\)/i);
+  if (doubleQuoted) return doubleQuoted[1];
+  const singleQuoted = bgImage.match(/url\(\s*'([^']+)'\s*\)/i);
+  if (singleQuoted) return singleQuoted[1];
+  const bare = bgImage.match(/url\(\s*([^)'"]+?)\s*\)/i);
+  return bare ? bare[1] : undefined;
 }
 
 /**

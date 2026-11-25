@@ -143,3 +143,35 @@ test('extractFIRFromElement renders checked checkbox with check vector', () => {
   assert.equal(fir.children![0].type, 'VECTOR');
   assert.ok(fir.children![0].svgContent?.includes('path'));
 });
+
+test('extractFIRFromElement preserves a select chevron as a VECTOR child', () => {
+  installMocks();
+  const svg =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23193800' stroke-width='1.5'/%3E%3C/svg%3E";
+  (globalThis as any).window.getComputedStyle = () => ({
+    ...STYLE,
+    backgroundImage: `url("${svg}")`,
+    backgroundSize: '12px 8px',
+    backgroundPosition: 'right 17px center',
+  });
+
+  const select = mockElement('select', {
+    id: 'lead-service',
+    selectedOptions: [{ textContent: 'Искусственные фитостены' }],
+    rect: { x: 100, y: 200, width: 598, height: 43 },
+  });
+
+  const fir = extractFIRFromElement(select as any);
+  assert.equal(fir.type, 'FRAME');
+  assert.equal(fir.children?.length, 2);
+
+  const arrow = fir.children!.find((child) => child.name.includes('-arrow'));
+  assert.ok(arrow);
+  assert.equal(arrow!.type, 'VECTOR');
+  assert.ok(arrow!.svgContent?.includes('<svg'));
+  assert.deepEqual(arrow!.bounds, { x: 669, y: 217.5, width: 12, height: 8 });
+
+  const text = fir.children!.find((child) => child.type === 'TEXT');
+  assert.ok(text);
+  assert.equal(text!.bounds.width, 574 - 12 - 6);
+});

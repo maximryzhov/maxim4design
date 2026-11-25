@@ -18,7 +18,7 @@ import {
 } from './text-builder.ts';
 import { extractElementStyles } from './style-extractor.ts';
 import { serializeSvgElement } from './svg-serializer.ts';
-import { extractImageData, resolveTreeImagesAsync, type ExternalImageFetcher } from './image-loader.ts';
+import { extractBackgroundImageUrl, extractImageData, resolveTreeImagesAsync, type ExternalImageFetcher } from './image-loader.ts';
 import { extractPageFonts } from './font-extractor.ts';
 import { extractPseudoElement } from './pseudo-extractor.ts';
 import { analyzeElementLayout } from './layout-analyzer.ts';
@@ -436,6 +436,101 @@ function getUnrotatedBounds(bounds: FIRBounds, transform?: FIRTransform): FIRBou
   };
 }
 
+function decodeSvgDataUrl(url: string): string | undefined {
+  if (!url.startsWith('data:image/svg+xml')) return undefined;
+  const comma = url.indexOf(',');
+  if (comma < 0) return undefined;
+  const meta = url.slice(0, comma);
+  const payload = url.slice(comma + 1);
+  try {
+    if (meta.includes(';base64')) {
+      return typeof atob === 'function' ? atob(payload) : undefined;
+    }
+    return decodeURIComponent(payload);
+  } catch {
+    return undefined;
+  }
+}
+
+function parseSvgSize(svg: string): { width: number; height: number } | undefined {
+  const width = parseFloat((svg.match(/<svg[^>]*\bwidth=['"]([\d.]+)/i) || [])[1]);
+  const height = parseFloat((svg.match(/<svg[^>]*\bheight=['"]([\d.]+)/i) || [])[1]);
+  if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+    return { width, height };
+  }
+  const viewBox = (svg.match(/viewBox=['"]([^'"]+)['"]/i) || [])[1];
+  if (viewBox) {
+    const parts = viewBox.trim().split(/\s+/).map(Number);
+    if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+      return { width: parts[2], height: parts[3] };
+    }
+  }
+  return undefined;
+}
+
+function parseBackgroundSize(
+  value: string,
+  fallback: { width: number; height: number }
+): { width: number; height: number } {
+  const parts = (value || '').trim().split(/\s+/);
+  const parse = (token: string | undefined, fb: number) => {
+    if (!token || token === 'auto' || token === 'cover' || token === 'contain') return fb;
+    const parsed = parseFloat(token);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fb;
+  };
+  const width = parse(parts[0], fallback.width);
+  const height = parse(parts[1] || parts[0], fallback.height);
+  return { width, height };
+}
+
+function parseBackgroundPosition(
+  value: string,
+  container: { width: number; height: number },
+  icon: { width: number; height: number }
+): { x: number; y: number } {
+  const tokens = (value || '').trim().split(/\s+/);
+  const number = (token: string | undefined) => {
+    if (!token) return 0;
+    const parsed = parseFloat(token);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  // Chrome resolves `right 17px center` into `calc(100% - 11.6719px) 50%`.
+  const calcX = value.match(/calc\(\s*([\d.]+)%\s*([+-])\s*([\d.]+)px\s*\)/i);
+  if (calcX) {
+    const percent = parseFloat(calcX[1]) / 100;
+    const offset = parseFloat(calcX[3]);
+    return {
+      x: (container.width - icon.width) * percent + (calcX[2] === '-' ? -offset : offset),
+      y: (container.height - icon.height) / 2,
+    };
+  }
+
+  let x = (container.width - icon.width) / 2;
+  const first = tokens[0] || 'center';
+  if (first === 'left') {
+    x = number(tokens[1]);
+  } else if (first === 'right') {
+    x = container.width - icon.width - number(tokens[1]);
+  } else if (first.endsWith('%')) {
+    x = ((container.width - icon.width) * parseFloat(first)) / 100;
+  }
+
+  let y = (container.height - icon.height) / 2;
+  const vertical = first === 'left' || first === 'right' ? tokens[2] : tokens[1];
+  if (vertical === 'top') {
+    y = first === 'left' || first === 'right' ? number(tokens[3]) : number(tokens[2]);
+  } else if (vertical === 'bottom') {
+    const offset = first === 'left' || first === 'right' ? number(tokens[3]) : number(tokens[2]);
+    y = container.height - icon.height - offset;
+  } else if (vertical && vertical.endsWith('%')) {
+    y = ((container.height - icon.height) * parseFloat(vertical)) / 100;
+  }
+
+  return { x, y };
+}
+
+
 function buildFormControlNode(
   element: HTMLElement,
   kind: FormControlKind,
@@ -530,6 +625,63 @@ function buildFormControlNode(
       zIndex: 0,
       textData,
     });
+  }
+
+  // Native select arrows are CSS background-images. They are intentionally skipped
+  // as a full-frame background paint, but must be preserved as a small child layer.
+  if (kind === 'select') {
+    const bgUrl = extractBackgroundImageUrl(computed.backgroundImage || '');
+    if (bgUrl) {
+      const svg = decodeSvgDataUrl(bgUrl);
+      const intrinsic = svg ? parseSvgSize(svg) : undefined;
+      const icon = parseBackgroundSize(
+        computed.backgroundSize || '',
+        intrinsic || { width: 12, height: 8 }
+      );
+      const position = parseBackgroundPosition(
+        computed.backgroundPosition || '',
+        { width: base.bounds.width, height: base.bounds.height },
+        icon
+      );
+      const arrowBounds: FIRBounds = {
+        x: Math.round((base.bounds.x + position.x) * 100) / 100,
+        y: Math.round((base.bounds.y + position.y) * 100) / 100,
+        width: Math.round(icon.width * 100) / 100,
+        height: Math.round(icon.height * 100) / 100,
+      };
+
+      if (svg) {
+        children.push({
+          id: `${base.id}-arrow`,
+          name: `${base.name}-arrow`,
+          type: 'VECTOR',
+          bounds: arrowBounds,
+          visible: base.visible,
+          opacity: 1,
+          clipsContent: false,
+          zIndex: 1,
+          svgContent: svg,
+        });
+      } else if (bgUrl.startsWith('data:image/')) {
+        children.push({
+          id: `${base.id}-arrow`,
+          name: `${base.name}-arrow`,
+          type: 'IMAGE',
+          bounds: arrowBounds,
+          visible: base.visible,
+          opacity: 1,
+          clipsContent: false,
+          zIndex: 1,
+          imageData: { base64: bgUrl, scaleMode: 'FIT' },
+        });
+      }
+
+      // Keep the value text from running under the arrow.
+      const textChild = children.find((child) => child.type === 'TEXT');
+      if (textChild) {
+        textChild.bounds.width = Math.max(1, textChild.bounds.width - icon.width - 6);
+      }
+    }
   }
 
   return {
