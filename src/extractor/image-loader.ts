@@ -1,5 +1,9 @@
 import type { FIRImageData, FIRNode } from '../types/fir.ts';
 
+/** Local bridge proxy can take 2-3s for a cold remote image; 1.5s used to lose photos. */
+export const IMAGE_PROXY_TIMEOUT_MS = 15000;
+export const IMAGE_PROXY_RETRIES = 2;
+
 /**
  * Extracts url from CSS background-image property.
  * e.g. `url("https://example.com/pic.png")` -> `https://example.com/pic.png`
@@ -83,6 +87,55 @@ export function imageToDataUrl(
 
 export type ExternalImageFetcher = (url: string) => Promise<string | undefined>;
 
+async function fetchImageFromLocalProxy(
+  url: string,
+  maxDimension: number
+): Promise<string | undefined> {
+  if (typeof fetch !== 'function') return undefined;
+
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : undefined;
+  const timer = controller
+    ? setTimeout(() => controller.abort(), IMAGE_PROXY_TIMEOUT_MS)
+    : undefined;
+  const proxyUrl = `http://localhost:8765/proxy-image?url=${encodeURIComponent(url)}`;
+
+  try {
+    const resp = await fetch(proxyUrl, { signal: controller?.signal });
+    if (!resp.ok) {
+      console.warn('[ImageLoader] Local bridge proxy returned HTTP', resp.status, url);
+      return undefined;
+    }
+
+    const json = await resp.json().catch(() => null);
+    if (json?.dataUrl) {
+      return resolveImageUrlToBase64(json.dataUrl, maxDimension);
+    }
+
+    if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
+      const blob = await resp.blob();
+      const objUrl = URL.createObjectURL(blob);
+      try {
+        const decoded = await new Promise<string | undefined>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(imageToDataUrl(img, maxDimension));
+          img.onerror = () => resolve(undefined);
+          img.src = objUrl;
+        });
+        if (decoded) return decoded;
+      } finally {
+        URL.revokeObjectURL(objUrl);
+      }
+    }
+  } catch (err) {
+    console.warn('[ImageLoader] Local bridge proxy failed:', url, err);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+
+  return undefined;
+}
+
+
 /**
  * Asynchronously fetches an external HTTP(S) image URL (or decodes WebP/oversized data URI)
  * and converts it into a Figma-compatible PNG/JPEG base64 data URL.
@@ -150,37 +203,13 @@ export async function resolveImageUrlToBase64(
     }
   }
 
-  // Fallback to local bridge proxy (http://localhost:8765/proxy-image) if running
-  if (typeof fetch === 'function') {
-    try {
-      const controller = typeof AbortController !== 'undefined' ? new AbortController() : undefined;
-      const timer = controller ? setTimeout(() => controller.abort(), 1500) : undefined;
-      const proxyUrl = `http://localhost:8765/proxy-image?url=${encodeURIComponent(url)}`;
-      const resp = await fetch(proxyUrl, { signal: controller?.signal });
-      if (timer) clearTimeout(timer);
-      if (resp.ok) {
-        const json = await resp.json().catch(() => null);
-        if (json?.dataUrl) {
-          return resolveImageUrlToBase64(json.dataUrl, maxDimension);
-        }
-        if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
-          const blob = await resp.blob();
-          const objUrl = URL.createObjectURL(blob);
-          try {
-            const decoded = await new Promise<string | undefined>((resolve) => {
-              const img = new Image();
-              img.onload = () => resolve(imageToDataUrl(img, maxDimension));
-              img.onerror = () => resolve(undefined);
-              img.src = objUrl;
-            });
-            if (decoded) return decoded;
-          } finally {
-            URL.revokeObjectURL(objUrl);
-          }
-        }
-      }
-    } catch {
-      // Local bridge not running — ignore silently
+  // Fallback to local bridge proxy (http://localhost:8765/proxy-image) if running.
+  // Retry once: cold bridge fetches can take ~2-3s and transiently fail.
+  for (let attempt = 0; attempt < IMAGE_PROXY_RETRIES; attempt++) {
+    const proxied = await fetchImageFromLocalProxy(url, maxDimension);
+    if (proxied) return proxied;
+    if (attempt < IMAGE_PROXY_RETRIES - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
     }
   }
 
