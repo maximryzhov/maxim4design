@@ -8,7 +8,13 @@ import type {
   BorderSideStyle,
   TextSegment,
 } from '../types/fir.ts';
-import { isTextContainer, extractTextData, extractTextNodeData } from './text-builder.ts';
+import {
+  isTextContainer,
+  extractTextData,
+  extractTextNodeData,
+  extractFormControlTextData,
+  type FormControlKind,
+} from './text-builder.ts';
 import { extractElementStyles } from './style-extractor.ts';
 import { serializeSvgElement } from './svg-serializer.ts';
 import { extractImageData, resolveTreeImagesAsync, type ExternalImageFetcher } from './image-loader.ts';
@@ -327,6 +333,109 @@ function getTextNodeBounds(node: Node): FIRBounds | undefined {
   }
 }
 
+function buildFormControlNode(
+  element: HTMLElement,
+  kind: FormControlKind,
+  base: {
+    id: string;
+    name: string;
+    bounds: FIRBounds;
+    visible: boolean;
+    opacity: number;
+    clipsContent: boolean;
+    zIndex: number;
+    style?: FIRStyle;
+    layout?: FIRLayout;
+  }
+): FIRNode {
+  const computed = window.getComputedStyle(element);
+  const inputType =
+    kind === 'input' ? String((element as HTMLInputElement).type || 'text').toLowerCase() : '';
+  const isChoice = inputType === 'checkbox' || inputType === 'radio';
+
+  if (isChoice) {
+    const checked = Boolean((element as HTMLInputElement).checked);
+    const style: FIRStyle = { ...(base.style || {}) };
+    if (!style.borders) {
+      const borderColor: RGBAColor = { r: 0.85, g: 0.87, b: 0.83, a: 1 };
+      const side = { width: 1, color: borderColor, style: 'solid' as const };
+      style.borders = { top: side, right: side, bottom: side, left: side };
+    }
+    if (!style.borderRadius) {
+      const radius = { topLeft: 3, topRight: 3, bottomRight: 3, bottomLeft: 3 };
+      style.borderRadius = radius;
+    }
+
+    const children: FIRNode[] = [];
+    if (checked) {
+      const size = Math.max(8, Math.min(base.bounds.width, base.bounds.height) - 4);
+      const x = base.bounds.x + (base.bounds.width - size) / 2;
+      const y = base.bounds.y + (base.bounds.height - size) / 2;
+      children.push({
+        id: `${base.id}-check`,
+        name: `${base.name}-check`,
+        type: 'VECTOR',
+        bounds: { x, y, width: size, height: size },
+        visible: base.visible,
+        opacity: 1,
+        clipsContent: false,
+        zIndex: 1,
+        svgContent: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 10 10"><path d="M1.5 5.2 L4 7.7 L8.7 2.4" fill="none" stroke="#193800" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      });
+    }
+
+    return {
+      ...base,
+      type: 'FRAME',
+      style,
+      children: children.length > 0 ? children : undefined,
+    };
+  }
+
+  const textData = extractFormControlTextData(element, kind);
+  const children: FIRNode[] = [];
+
+  if (textData) {
+    const borderLeft = parseFloat(computed.borderLeftWidth) || 0;
+    const borderRight = parseFloat(computed.borderRightWidth) || 0;
+    const borderTop = parseFloat(computed.borderTopWidth) || 0;
+    const borderBottom = parseFloat(computed.borderBottomWidth) || 0;
+    const padLeft = parseFloat(computed.paddingLeft) || 0;
+    const padRight = parseFloat(computed.paddingRight) || 0;
+    const padTop = parseFloat(computed.paddingTop) || 0;
+    const padBottom = parseFloat(computed.paddingBottom) || 0;
+
+    const x = base.bounds.x + borderLeft + padLeft;
+    const y = base.bounds.y + borderTop + padTop;
+    const width = Math.max(
+      1,
+      base.bounds.width - borderLeft - borderRight - padLeft - padRight
+    );
+    const height = Math.max(
+      1,
+      base.bounds.height - borderTop - borderBottom - padTop - padBottom
+    );
+
+    children.push({
+      id: `${base.id}-text`,
+      name: `${base.name}-text`,
+      type: 'TEXT',
+      bounds: { x, y, width, height },
+      visible: base.visible,
+      opacity: 1,
+      clipsContent: false,
+      zIndex: 0,
+      textData,
+    });
+  }
+
+  return {
+    ...base,
+    type: 'FRAME',
+    children: children.length > 0 ? children : undefined,
+  };
+}
+
 function traverseElement(element: HTMLElement): FIRNode {
   const tagName = element.tagName.toUpperCase();
   const computed = window.getComputedStyle(element);
@@ -391,6 +500,45 @@ function traverseElement(element: HTMLElement): FIRNode {
     };
   }
 
+  // 3. Form controls (input/textarea/select)
+  const formKind: FormControlKind | undefined =
+    tagName === 'INPUT'
+      ? 'input'
+      : tagName === 'TEXTAREA'
+        ? 'textarea'
+        : tagName === 'SELECT'
+          ? 'select'
+          : undefined;
+  if (formKind) {
+    const inputType =
+      formKind === 'input'
+        ? String((element as HTMLInputElement).type || 'text').toLowerCase()
+        : '';
+    if (inputType === 'hidden') {
+      return {
+        id,
+        name,
+        type: 'FRAME',
+        bounds,
+        visible: false,
+        opacity: 0,
+        clipsContent,
+        zIndex,
+      };
+    }
+    return buildFormControlNode(element, formKind, {
+      id,
+      name,
+      bounds,
+      visible,
+      opacity,
+      clipsContent,
+      zIndex,
+      style: Object.keys(style).length > 0 ? style : undefined,
+      layout,
+    });
+  }
+
   // Collect element and raw-text children in DOM order. Raw text nodes must survive
   // here (e.g. <summary>Вопрос<span class="faq-plus">+</span></summary>) — otherwise
   // the question text is dropped while only the "+" icon remains.
@@ -410,6 +558,12 @@ function traverseElement(element: HTMLElement): FIRNode {
     if (nodeType !== 1 /* ELEMENT_NODE */) continue;
 
     const child = node as HTMLElement;
+    if (
+      child.tagName.toUpperCase() === 'INPUT' &&
+      String((child as HTMLInputElement).type || '').toLowerCase() === 'hidden'
+    ) {
+      continue;
+    }
     if (!IGNORED_TAGS.has(child.tagName.toUpperCase())) {
       const childComputed = window.getComputedStyle(child);
       const childRect = child.getBoundingClientRect();

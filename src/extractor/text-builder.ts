@@ -125,9 +125,10 @@ interface SegmentCollectorState {
 function createSegmentFromComputed(
   computed: CSSStyleDeclaration,
   start: number,
-  end: number
+  end: number,
+  colorOverride?: RGBAColor
 ): TextSegment {
-  const textColor = parseCssColor(computed.color) || { r: 0, g: 0, b: 0, a: 1 };
+  const textColor = colorOverride || parseCssColor(computed.color) || { r: 0, g: 0, b: 0, a: 1 };
   const fontSize = parseFloat(computed.fontSize) || 16;
   const fontWeight =
     parseInt(computed.fontWeight, 10) || (computed.fontWeight === 'bold' ? 700 : 400);
@@ -328,5 +329,66 @@ export function extractTextNodeData(
     segments: [segment],
     whiteSpace,
     isSingleLine,
+  };
+}
+
+export type FormControlKind = 'input' | 'textarea' | 'select';
+
+/**
+ * Extracts the visible text of an input/textarea/select: current value or placeholder
+ * for inputs, value or placeholder for textareas, selected option for selects.
+ */
+export function extractFormControlTextData(
+  element: HTMLElement,
+  kind: FormControlKind
+): FIRTextData | undefined {
+  if (typeof window === 'undefined' || !window.getComputedStyle) return undefined;
+
+  const computed = window.getComputedStyle(element);
+  let characters = '';
+  let isPlaceholder = false;
+
+  if (kind === 'select') {
+    const select = element as unknown as {
+      selectedOptions?: ArrayLike<{ textContent: string | null }>;
+      value?: string;
+    };
+    const selected = select.selectedOptions && select.selectedOptions[0];
+    characters = String(selected?.textContent || select.value || '').trim();
+  } else if (kind === 'textarea') {
+    const textarea = element as unknown as { value?: string; placeholder?: string };
+    characters = String(textarea.value || textarea.placeholder || '').trim();
+    isPlaceholder = !textarea.value && Boolean(textarea.placeholder);
+  } else {
+    const input = element as unknown as { value?: string; placeholder?: string };
+    characters = String(input.value || input.placeholder || '').trim();
+    isPlaceholder = !input.value && Boolean(input.placeholder);
+  }
+
+  if (!characters) return undefined;
+
+  let color = parseCssColor(computed.color);
+  if (isPlaceholder) {
+    try {
+      const placeholderStyle = window.getComputedStyle(element, '::placeholder');
+      const placeholderColor = placeholderStyle ? parseCssColor(placeholderStyle.color) : undefined;
+      if (placeholderColor) {
+        color = placeholderColor;
+      } else if (color) {
+        color = { ...color, a: 0.55 };
+      }
+    } catch {
+      if (color) color = { ...color, a: 0.55 };
+    }
+  }
+
+  const segment = createSegmentFromComputed(computed, 0, characters.length, color);
+  const whiteSpace = kind === 'textarea' ? computed.whiteSpace || 'pre-wrap' : 'nowrap';
+
+  return {
+    characters,
+    segments: [segment],
+    whiteSpace,
+    isSingleLine: kind !== 'textarea',
   };
 }
