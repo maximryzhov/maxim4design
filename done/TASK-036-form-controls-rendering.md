@@ -54,4 +54,4 @@ tags: [extractor, figma-plugin, forms, bugfix]
 - Повторное извлечение: 146 TEXT (было 142), 17 IMAGE, 148 FRAME.
 - В форме появились: `input#lead-name-text` «Ваше имя», `input#lead-phone-text` «+7 (___) ___-__-__», `select#lead-service-text` «Искусственные фитостены», `textarea#lead-message-text` с placeholder.
 - Тесты: 88/88; новый файл `tests/form-controls.test.ts` (6 кейсов).
-- Визуальный e2e в Figma — в общем прогоне после TASK-040.
+- E2E v7 (кадр `16:2`): поля формы с placeholder/значением и чекбоксом видны.

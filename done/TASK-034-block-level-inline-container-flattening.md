@@ -55,4 +55,4 @@ tags: [extractor, text, images, layout, bugfix]
 - `.project-photo` → FRAME с `IMAGE` и абсолютным fallback-TEXT.
 - `.service-row` → FRAME с тремя TEXT: `01`, заголовок 45.6px, описание 17.1px.
 - Тесты: 80/80; новый файл `tests/text-container.test.ts` (6 кейсов).
-- Визуальный e2e в Figma Desktop вынесен в общий прогон после TASK-040 (Figma была перезапущена и потеряла открытый Untitled-файл).
+- E2E v7 (кадр `16:2`): 4 фото товаров и 6 фото проектов видны, тексты карточек не наезжают.

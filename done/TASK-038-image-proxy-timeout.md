@@ -46,4 +46,4 @@ tags: [extractor, images, proxy, bugfix]
 - При ошибке/не-2xx пишется `console.warn` с URL и статусом; после первой неудачи — повтор через 250 мс.
 - Холодный тест: мост перезапущен (кэш пуст), extraction 1440 — **17/17 IMAGE с base64** (включая `img#hero-card-image`, `img.services-bg`, `img.contact-plant`), FIR 12.26 МБ.
 - Тесты: 93/93; новый файл `tests/image-proxy-timeout.test.ts` (3 кейса: константы, retry, полный отказ).
-- Визуальный e2e в Figma — в общем прогоне после TASK-040.
+- E2E v7 (кадр `16:2`): все 17 IMAGE с base64, фото на месте.

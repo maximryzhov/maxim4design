@@ -51,4 +51,4 @@ tags: [extractor, figma-plugin, text, typography, bugfix]
 - `renderTextNode()` выставляет `textAlignHorizontal`. Для right/center/justify + `nowrap`/single-line используется `textAutoResize = 'NONE'`, иначе `WIDTH_AND_HEIGHT` схлопывал бы ширину и выравнивание терялось.
 - Проверка FIR: `span.hero-heading-first` → `textAlign: RIGHT`, `span.hero-heading-second` → `LEFT`; навигация → `УСЛУГИ`, `ПРОЕКТЫ`, `МАГАЗИН` с `textTransform: uppercase`.
 - Тесты: 90/90; новый файл `tests/text-align-transform.test.ts` (2 кейса).
-- Визуальный e2e в Figma — в общем прогоне после TASK-040.
+- E2E v7 (кадр `16:2`): hero выровнен right/left, навигация в верхнем регистре.

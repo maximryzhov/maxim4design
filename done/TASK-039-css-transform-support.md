@@ -52,4 +52,4 @@ tags: [extractor, figma-plugin, images, transforms, bugfix]
 - Проверка FIR: `img.contact-plant` (1207×1207) → `transform.scaleX = -1`, `rotation = 0`.
 - Тесты: 96/96; новый файл `tests/css-transform.test.ts` (3 кейса).
 - Ограничение: зеркалирование FRAME/TEXT пока не применяется (в этой странице есть только зеркальный IMAGE).
-- Визуальный e2e в Figma — в общем прогоне после TASK-040.
+- E2E v7 (кадр `16:2`): зеркалирование contact-plant применено; кроп/масштаб растения ещё отличается от эталона.

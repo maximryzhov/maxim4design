@@ -52,4 +52,4 @@ tags: [extractor, text, faq, forms, bugfix]
 - Повторное извлечение: 142 TEXT (было 129), 17 IMAGE, 2 VECTOR, 148 FRAME.
 - `summary`: `TEXT 'Всегда зелёные'` + `span.faq-plus` (52×52); у формы появились `label-text` для всех 5 подписей.
 - Тесты: 82/82; новый файл `tests/raw-text-nodes.test.ts`.
-- Визуальный e2e в Figma — в общем прогоне после TASK-040.
+- E2E v7 (кадр `16:2`): вопросы FAQ и подписи полей видны; «+» первого FAQ остался в левом верхнем углу (косметика).

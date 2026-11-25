@@ -62,4 +62,4 @@ tags: [fonts, text, figma-plugin, typography, bugfix]
 - Алиас проверен unit-тестом: `ContactBebas 800` → `Oswald/Bold`, warning с `(alias)`.
 - Overflow проверен тестом: строка 900px в боксе 300px → размер шрифта уменьшается, ширина остаётся 300px.
 - Тесты: 97/97; `dist/code.js` SHA256 `EE2589E6…05D1`.
-- Визуальный e2e в Figma — в общем прогоне (Figma Desktop потеряла открытый Untitled-файл после перезапуска).
+- E2E v7 (кадр `16:2`): заголовки на Oswald/Montserrat, без переполнения; текст кнопки submit переносится на 2 строки (остаточная косметика).
