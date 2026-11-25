@@ -4,6 +4,72 @@ import type { FIRImageData, FIRNode } from '../types/fir.ts';
 export const IMAGE_PROXY_TIMEOUT_MS = 15000;
 export const IMAGE_PROXY_RETRIES = 2;
 
+/** Neutral 1x1 placeholder used when an image cannot be decoded/fetched at all. */
+export const IMAGE_PLACEHOLDER_DATA_URL =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGN4+vz1fwAJIwO3uXg7bwAAAABJRU5ErkJggg==';
+
+/**
+ * Returns true when the canvas contains no visible pixels. A lazy/undecoded
+ * <img> draws as a fully transparent canvas, which used to be serialized as a
+ * valid but blank PNG (white cards in Figma).
+ */
+function canvasHasVisiblePixels(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): boolean {
+  if (typeof ctx.getImageData !== 'function' || width < 1 || height < 1) return true;
+  try {
+    const steps = 16;
+    for (let iy = 0; iy <= steps; iy++) {
+      const y = Math.min(height - 1, Math.round((iy / steps) * (height - 1)));
+      for (let ix = 0; ix <= steps; ix++) {
+        const x = Math.min(width - 1, Math.round((ix / steps) * (width - 1)));
+        const data = ctx.getImageData(x, y, 1, 1).data;
+        if (data[3] > 0) return true;
+      }
+    }
+    return false;
+  } catch {
+    // Tainted canvas (CORS): treat as non-blank and let the caller fall back
+    // to the proxy path instead of silently dropping a real image.
+    return true;
+  }
+}
+
+/** Decodes an image element and waits until its pixels are ready for drawImage. */
+async function decodeImageElement(
+  src: string,
+  timeoutMs = IMAGE_PROXY_TIMEOUT_MS
+): Promise<HTMLImageElement | undefined> {
+  if (typeof Image === 'undefined') return undefined;
+  const img = new Image();
+  const loaded = new Promise<boolean>((resolve) => {
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = src;
+  });
+  const ok = await Promise.race([
+    loaded,
+    new Promise<boolean>((resolve) => setTimeout(() => resolve(false), timeoutMs)),
+  ]);
+  if (!ok || !img.complete || img.naturalWidth < 1 || img.naturalHeight < 1) {
+    return undefined;
+  }
+  if (typeof img.decode === 'function') {
+    try {
+      await Promise.race([
+        img.decode(),
+        new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+      ]);
+    } catch {
+      return undefined;
+    }
+  }
+  return img;
+}
+
+
 /** Detects `scaleX(-1)` (or a mirroring matrix) in a computed CSS transform. */
 export function isMirroredX(transform: string | undefined): boolean {
   if (!transform || transform === 'none') return false;
@@ -69,6 +135,12 @@ export function imageToDataUrl(
       ctx.scale(-1, 1);
     }
     ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+    // Lazy images can have naturalWidth/naturalHeight before their pixels are
+    // decoded; drawImage then produces a fully transparent canvas. Do not turn
+    // that into a "successful" blank PNG.
+    if (!canvasHasVisiblePixels(ctx, targetWidth, targetHeight)) {
+      return undefined;
+    }
     let pngData = canvas.toDataURL('image/png');
     // If PNG is still > 1.5MB, try JPEG compression if no transparency is needed,
     // otherwise downscale alpha PNG to 1280px max dimension to keep FIR JSON compact.
@@ -86,6 +158,10 @@ export function imageToDataUrl(
         canvas.height = Math.max(1, Math.round(targetHeight * scale));
         const ctx2 = canvas.getContext('2d');
         if (ctx2) {
+          if (flipX) {
+            ctx2.translate(canvas.width, 0);
+            ctx2.scale(-1, 1);
+          }
           ctx2.drawImage(img, 0, 0, canvas.width, canvas.height);
           pngData = canvas.toDataURL('image/png');
         }
@@ -130,12 +206,8 @@ async function fetchImageFromLocalProxy(
       const blob = await resp.blob();
       const objUrl = URL.createObjectURL(blob);
       try {
-        const decoded = await new Promise<string | undefined>((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve(imageToDataUrl(img, maxDimension, flipX));
-          img.onerror = () => resolve(undefined);
-          img.src = objUrl;
-        });
+        const img = await decodeImageElement(objUrl);
+        const decoded = img ? imageToDataUrl(img, maxDimension, flipX) : undefined;
         if (decoded) return decoded;
       } finally {
         URL.revokeObjectURL(objUrl);
@@ -172,12 +244,8 @@ export async function resolveImageUrlToBase64(
     if (typeof Image === 'undefined' || typeof document === 'undefined') {
       return url;
     }
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(imageToDataUrl(img, maxDimension, flipX) || url);
-      img.onerror = () => resolve(url);
-      img.src = url;
-    });
+    const img = await decodeImageElement(url);
+    return (img && imageToDataUrl(img, maxDimension, flipX)) || url;
   }
 
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -191,12 +259,8 @@ export async function resolveImageUrlToBase64(
         const blob = await resp.blob();
         const objUrl = URL.createObjectURL(blob);
         try {
-          const decoded = await new Promise<string | undefined>((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve(imageToDataUrl(img, maxDimension, flipX));
-            img.onerror = () => resolve(undefined);
-            img.src = objUrl;
-          });
+          const img = await decodeImageElement(objUrl);
+          const decoded = img ? imageToDataUrl(img, maxDimension, flipX) : undefined;
           if (decoded) return decoded;
         } finally {
           URL.revokeObjectURL(objUrl);
@@ -278,6 +342,10 @@ export async function resolveTreeImagesAsync(
           resolveImageUrlToBase64(src, nodeMaxDim, fetchExternalImage, flipX).then((resolved) => {
             if (resolved) {
               target.base64 = resolved;
+            } else {
+              // Never leave an HTTP(S) URL or a blank bitmap in FIR: the plugin
+              // cannot fetch URLs and a transparent image becomes a white card.
+              target.base64 = IMAGE_PLACEHOLDER_DATA_URL;
             }
           })
         );

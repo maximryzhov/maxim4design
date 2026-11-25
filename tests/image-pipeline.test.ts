@@ -7,6 +7,8 @@ import {
   resolveTreeImagesAsync,
   computeTargetImageDimension,
   isSmallBackgroundIcon,
+  imageToDataUrl,
+  IMAGE_PLACEHOLDER_DATA_URL,
 } from '../src/extractor/image-loader.ts';
 import {
   base64ToUint8Array,
@@ -225,3 +227,76 @@ test('isSmallBackgroundIcon filters out select arrows and small no-repeat bg ico
   assert.equal(isSmallBackgroundIcon('DIV', '16px 16px', 'no-repeat', 240), true);
   assert.equal(isSmallBackgroundIcon('DIV', 'cover', 'no-repeat', 800), false);
 });
+
+test('imageToDataUrl rejects a fully transparent canvas from an undecoded image', () => {
+  const origDocument = (globalThis as any).document;
+  let alpha = 0;
+  const ctx = {
+    translate() {},
+    scale() {},
+    drawImage() {},
+    getImageData: () => ({ data: new Uint8ClampedArray([0, 0, 0, alpha]) }),
+  };
+  const canvas = {
+    width: 0,
+    height: 0,
+    getContext: () => ctx,
+    toDataURL: () => 'data:image/png;base64,VALID',
+  };
+  (globalThis as any).document = { createElement: () => canvas };
+
+  const img = {
+    naturalWidth: 10,
+    naturalHeight: 10,
+    width: 10,
+    height: 10,
+  } as unknown as HTMLImageElement;
+
+  try {
+    assert.equal(imageToDataUrl(img), undefined);
+    alpha = 255;
+    assert.equal(imageToDataUrl(img), 'data:image/png;base64,VALID');
+  } finally {
+    (globalThis as any).document = origDocument;
+  }
+});
+
+test('resolveTreeImagesAsync replaces an unresolvable URL with a placeholder data URI', async () => {
+  const origFetch = globalThis.fetch;
+  try {
+    (globalThis as any).fetch = async () => {
+      throw new Error('offline');
+    };
+    const tree: FIRNode = {
+      id: 'root-placeholder',
+      name: 'div',
+      type: 'FRAME',
+      bounds: { x: 0, y: 0, width: 200, height: 200 },
+      visible: true,
+      opacity: 1,
+      clipsContent: false,
+      zIndex: 0,
+      children: [
+        {
+          id: 'img-placeholder',
+          name: 'img.remote',
+          type: 'IMAGE',
+          bounds: { x: 0, y: 0, width: 100, height: 100 },
+          visible: true,
+          opacity: 1,
+          clipsContent: false,
+          zIndex: 0,
+          imageData: { base64: 'https://example.com/missing.png', scaleMode: 'FILL' },
+        },
+      ],
+    };
+
+    await resolveTreeImagesAsync(tree, 2048, async () => undefined);
+    const value = tree.children?.[0].imageData?.base64;
+    assert.equal(value, IMAGE_PLACEHOLDER_DATA_URL);
+    assert.ok(value?.startsWith('data:image/png;base64,'));
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
