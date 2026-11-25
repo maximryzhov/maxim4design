@@ -8,7 +8,7 @@ import type {
   BorderSideStyle,
   TextSegment,
 } from '../types/fir.ts';
-import { isTextContainer, extractTextData } from './text-builder.ts';
+import { isTextContainer, extractTextData, extractTextNodeData } from './text-builder.ts';
 import { extractElementStyles } from './style-extractor.ts';
 import { serializeSvgElement } from './svg-serializer.ts';
 import { extractImageData, resolveTreeImagesAsync, type ExternalImageFetcher } from './image-loader.ts';
@@ -307,6 +307,26 @@ export async function extractFIRFromElementAsync(
   return resolveTreeImagesAsync(tree, maxImageDimension, options?.fetchExternalImage);
 }
 
+function getTextNodeBounds(node: Node): FIRBounds | undefined {
+  if (typeof document === 'undefined' || typeof document.createRange !== 'function') {
+    return undefined;
+  }
+  try {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const rect = range.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return undefined;
+    return {
+      x: Math.round(rect.x * 100) / 100,
+      y: Math.round(rect.y * 100) / 100,
+      width: Math.round(rect.width * 100) / 100,
+      height: Math.round(rect.height * 100) / 100,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 function traverseElement(element: HTMLElement): FIRNode {
   const tagName = element.tagName.toUpperCase();
   const computed = window.getComputedStyle(element);
@@ -371,21 +391,43 @@ function traverseElement(element: HTMLElement): FIRNode {
     };
   }
 
-  // Filter child elements
-  const childElements: HTMLElement[] = [];
-  for (let i = 0; i < element.children.length; i++) {
-    const child = element.children[i] as HTMLElement;
+  // Collect element and raw-text children in DOM order. Raw text nodes must survive
+  // here (e.g. <summary>Вопрос<span class="faq-plus">+</span></summary>) — otherwise
+  // the question text is dropped while only the "+" icon remains.
+  const childNodes: Node[] = [];
+  const sourceNodes: ArrayLike<Node> =
+    element.childNodes && element.childNodes.length > 0 ? element.childNodes : element.children;
+  for (let i = 0; i < sourceNodes.length; i++) {
+    const node = sourceNodes[i] as Node & HTMLElement;
+    const nodeType = typeof node.nodeType === 'number' ? node.nodeType : 1;
+
+    if (nodeType === 3 /* TEXT_NODE */) {
+      if (node.textContent && node.textContent.trim()) {
+        childNodes.push(node);
+      }
+      continue;
+    }
+    if (nodeType !== 1 /* ELEMENT_NODE */) continue;
+
+    const child = node as HTMLElement;
     if (!IGNORED_TAGS.has(child.tagName.toUpperCase())) {
       const childComputed = window.getComputedStyle(child);
       const childRect = child.getBoundingClientRect();
       const hasSize = childRect.width > 0 && childRect.height > 0;
       const hasChildren = child.children && child.children.length > 0;
+      // Visually-hidden helpers (width/height 1px + clip) must not leak into FIR.
+      const isVisuallyHidden =
+        childRect.width <= 1 &&
+        childRect.height <= 1 &&
+        (childComputed.overflow === 'hidden' ||
+          (childComputed.clip !== undefined && childComputed.clip !== 'auto'));
       if (
+        !isVisuallyHidden &&
         childComputed.display !== 'none' &&
         childComputed.visibility !== 'hidden' &&
         (hasSize || (hasChildren && childComputed.overflow !== 'hidden'))
       ) {
-        childElements.push(child);
+        childNodes.push(node);
       }
     }
   }
@@ -481,8 +523,26 @@ function traverseElement(element: HTMLElement): FIRNode {
     children.push(beforeNode);
   }
 
-  for (const childEl of childElements) {
-    children.push(traverseElement(childEl));
+  for (const childNode of childNodes) {
+    const childType = typeof (childNode as any).nodeType === 'number' ? (childNode as any).nodeType : 1;
+    if (childType === 3) {
+      const textData = extractTextNodeData(childNode, element);
+      const textBounds = getTextNodeBounds(childNode);
+      if (!textData || !textBounds) continue;
+      children.push({
+        id: `${id}-text-${children.length}`,
+        name: `${name}-text`,
+        type: 'TEXT',
+        bounds: textBounds,
+        visible,
+        opacity: 1,
+        clipsContent: false,
+        zIndex: 0,
+        textData,
+      });
+    } else {
+      children.push(traverseElement(childNode as unknown as HTMLElement));
+    }
   }
 
   // Pseudo-element ::after

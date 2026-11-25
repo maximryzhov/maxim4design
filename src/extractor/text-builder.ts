@@ -119,6 +119,51 @@ interface SegmentCollectorState {
 }
 
 /**
+ * Builds a TextSegment from a computed style and a character range.
+ * Shared by inline text extraction and raw text-node extraction.
+ */
+function createSegmentFromComputed(
+  computed: CSSStyleDeclaration,
+  start: number,
+  end: number
+): TextSegment {
+  const textColor = parseCssColor(computed.color) || { r: 0, g: 0, b: 0, a: 1 };
+  const fontSize = parseFloat(computed.fontSize) || 16;
+  const fontWeight =
+    parseInt(computed.fontWeight, 10) || (computed.fontWeight === 'bold' ? 700 : 400);
+  const lineHeightVal = parseFloat(computed.lineHeight);
+  const effectiveLineHeight = !isNaN(lineHeightVal) && lineHeightVal > 0
+    ? Math.round(lineHeightVal * 100) / 100
+    : fontSize >= 28
+      ? Math.round(fontSize * 1.05 * 100) / 100
+      : undefined;
+  const letterSpacingVal = parseFloat(computed.letterSpacing);
+
+  let textDecoration: 'NONE' | 'UNDERLINE' | 'STRIKETHROUGH' = 'NONE';
+  const dec = computed.textDecorationLine || computed.textDecoration || '';
+  if (dec.includes('underline')) {
+    textDecoration = 'UNDERLINE';
+  } else if (dec.includes('line-through')) {
+    textDecoration = 'STRIKETHROUGH';
+  }
+
+  const fontStyle: 'normal' | 'italic' = computed.fontStyle === 'italic' ? 'italic' : 'normal';
+
+  return {
+    start,
+    end,
+    fontFamily: (computed.fontFamily || 'Inter').split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
+    fontWeight,
+    fontSize,
+    fontStyle,
+    color: textColor,
+    lineHeightPx: effectiveLineHeight,
+    letterSpacingPx: !isNaN(letterSpacingVal) ? letterSpacingVal : undefined,
+    textDecoration,
+  };
+}
+
+/**
  * Extracts complete text and styled range segments from an element and its inline children.
  */
 export function extractTextData(rootElement: HTMLElement): FIRTextData {
@@ -146,42 +191,7 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
       state.characters += text;
       const end = state.characters.length;
 
-      const textColor = parseCssColor(computed.color) || { r: 0, g: 0, b: 0, a: 1 };
-      const fontSize = parseFloat(computed.fontSize) || 16;
-      const fontWeight =
-        parseInt(computed.fontWeight, 10) || (computed.fontWeight === 'bold' ? 700 : 400);
-      const lineHeightVal = parseFloat(computed.lineHeight);
-      const effectiveLineHeight = !isNaN(lineHeightVal) && lineHeightVal > 0
-        ? Math.round(lineHeightVal * 100) / 100
-        : fontSize >= 28
-          ? Math.round(fontSize * 1.05 * 100) / 100
-          : undefined;
-      const letterSpacingVal = parseFloat(computed.letterSpacing);
-
-      let textDecoration: 'NONE' | 'UNDERLINE' | 'STRIKETHROUGH' = 'NONE';
-      const dec = computed.textDecorationLine || computed.textDecoration || '';
-      if (dec.includes('underline')) {
-        textDecoration = 'UNDERLINE';
-      } else if (dec.includes('line-through')) {
-        textDecoration = 'STRIKETHROUGH';
-      }
-
-      const fontStyle: 'normal' | 'italic' = computed.fontStyle === 'italic' ? 'italic' : 'normal';
-
-      const segment: TextSegment = {
-        start,
-        end,
-        fontFamily: (computed.fontFamily || 'Inter').split(',')[0].replace(/['"]/g, '').trim() || 'Inter',
-        fontWeight,
-        fontSize,
-        fontStyle,
-        color: textColor,
-        lineHeightPx: effectiveLineHeight,
-        letterSpacingPx: !isNaN(letterSpacingVal) ? letterSpacingVal : undefined,
-        textDecoration,
-      };
-
-      state.segments.push(segment);
+      state.segments.push(createSegmentFromComputed(computed, start, end));
     } else if (node.nodeType === 1 /* Node.ELEMENT_NODE */) {
       const childEl = node as HTMLElement;
       const childTag = (childEl.tagName || '').toUpperCase();
@@ -273,6 +283,49 @@ export function extractTextData(rootElement: HTMLElement): FIRTextData {
   return {
     characters: state.characters,
     segments: state.segments,
+    whiteSpace,
+    isSingleLine,
+  };
+}
+
+/**
+ * Extracts a standalone DOM text node (e.g. "Всегда зелёные" directly inside <summary>
+ * before <span class="faq-plus">). Used when the parent is a structural FRAME, so the
+ * regular text-container path is not taken.
+ */
+export function extractTextNodeData(
+  textNode: Node,
+  parentElement: HTMLElement
+): FIRTextData | undefined {
+  if (typeof window === 'undefined' || !window.getComputedStyle) return undefined;
+
+  const computed = window.getComputedStyle(parentElement);
+  const raw = textNode.textContent || '';
+  const characters = normalizeWhitespace(raw, computed.whiteSpace).trim();
+  if (!characters) return undefined;
+
+  const segment = createSegmentFromComputed(computed, 0, characters.length);
+  const whiteSpace = computed.whiteSpace || 'normal';
+  let isSingleLine = whiteSpace === 'nowrap';
+
+  if (!isSingleLine && typeof document !== 'undefined' && typeof document.createRange === 'function') {
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(textNode);
+      const rect = range.getBoundingClientRect();
+      const fontSize = segment.fontSize;
+      const lineHeight = segment.lineHeightPx || fontSize * 1.25;
+      if (rect.height > 0 && rect.height <= Math.max(lineHeight, fontSize * 1.2) * 1.45) {
+        isSingleLine = true;
+      }
+    } catch {
+      // Range may fail on detached/mock nodes; keep multi-line default.
+    }
+  }
+
+  return {
+    characters,
+    segments: [segment],
     whiteSpace,
     isSingleLine,
   };
