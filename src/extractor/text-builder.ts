@@ -37,7 +37,26 @@ const TEXT_BLOCK_TAGS = new Set([
   'SPAN',
 ]);
 
+// Replaced/embedded elements stay structural even when CSS renders them inline.
+const REPLACED_TAGS = new Set([
+  'IMG',
+  'SVG',
+  'VIDEO',
+  'AUDIO',
+  'CANVAS',
+  'IFRAME',
+  'OBJECT',
+  'EMBED',
+  'INPUT',
+  'SELECT',
+  'TEXTAREA',
+  'BUTTON',
+]);
+
 export function isInlineElement(el: Element): boolean {
+  if (REPLACED_TAGS.has(el.tagName.toUpperCase())) {
+    return false;
+  }
   if (typeof window !== 'undefined' && window.getComputedStyle) {
     const computed = window.getComputedStyle(el);
     if (computed.position === 'absolute' || computed.position === 'fixed') {
@@ -55,11 +74,23 @@ export function isInlineElement(el: Element): boolean {
 
 export function isTextContainer(element: HTMLElement): boolean {
   const tagName = element.tagName.toUpperCase();
-  if (INLINE_TAGS.has(tagName)) {
-    return true;
+  const computed = typeof window !== 'undefined' && window.getComputedStyle
+    ? window.getComputedStyle(element)
+    : undefined;
+  const display = computed?.display || '';
+
+  // Flex/grid containers stay structural even when their children are inline tags.
+  // Otherwise <a class="product-card" style="display:flex"> with spans inside would
+  // be flattened into one TEXT node, losing images and per-child layout.
+  if (
+    (display === 'flex' || display === 'grid' || display === 'inline-flex' || display === 'inline-grid') &&
+    element.children.length > 0
+  ) {
+    return false;
   }
 
-  // Check child nodes: if all element children are inline tags, it's a text container
+  // Check child nodes: if all element children are inline tags, it's a text container.
+  // Structural children (img/svg/input/...) are not inline, so they force a FRAME.
   let hasElementChildren = false;
   for (let i = 0; i < element.children.length; i++) {
     hasElementChildren = true;
