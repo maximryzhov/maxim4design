@@ -4,18 +4,20 @@
 
 **maxim4design** переносит веб-страницу в Figma редактируемыми слоями: текст остаётся текстом, иконки — векторами, блоки собираются в Auto Layout.
 
+Плагин бесплатный, без подписок. Его сделали вместо платных конвертеров за $15–20 в месяц, которые не работают с `localhost` и закрытыми стендами.
+
 ## Что понадобится
 
 - **Figma Desktop** — [figma.com/downloads](https://www.figma.com/downloads/). В браузере локальные плагины не запускаются.
 - **Google Chrome**.
 - **Права редактирования** в файле Figma.
-- **Папка проекта** с `manifest.json` и `dist`. Папку `dist` собирает разработчик — в репозитории её нет.
+- **Готовая сборка** — [скачать архив](https://github.com/maximryzhov/maxim4design/releases/latest/download/maxim4design-dist.zip) с плагином, закладкой и расширением. Распакуйте его; пути ниже — от папки `maxim4design`.
 
 ## Плагин в Figma
 
 1. Откройте Figma Desktop и нужный файл.
 2. Меню **Plugins → Development → Import plugin from manifest…** (или правый клик по холсту → **Plugins → Development**).
-3. Выберите [`manifest.json`](manifest.json) в корне папки проекта.
+3. Выберите [`manifest.json`](manifest.json) в распакованной папке.
 4. В меню **Plugins → Development** появится **«HTML to Design (Open Source) - maxim4design»**.
 
 Проверка: запустите плагин → **«Загрузить демо»** → **«Импортировать в Figma»**. На холсте появится карточка «Привет, maxim4design!».
